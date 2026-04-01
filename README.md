@@ -1,21 +1,27 @@
 # dnsherene
 
-这是一个用于 DNSHE 免费域名月度续期的工具，项目分层比较明确：
+这是一个用于 DNSHE 免费域名月度续期的工具，当前结构按“入口、执行、通知、SDK”拆分：
 
-- `pkg/dnshe`：SDK 层，封装 API 客户端和领域模型。
-- `pkg/notifier`：统一通知接口。
-- `internal/app`：续期编排逻辑。
-- `cmd/dnsherene`：CLI 入口。
+- `cmd/dnsherene`：极薄入口，只负责加载配置、执行任务和输出公开结果。
+- `internal/runner`：顺序执行多账号续期，并统一分发通知。
+- `internal/app`：单账号续期编排逻辑。
+- `internal/output`：公开输出与脱敏。
+- `internal/report`：执行结果和通知共用的结构化报告模型。
+- `pkg/dnshe`：DNSHE API SDK。
+- `pkg/notifier`：零值可用的内建通知器实现。
 
 ## 项目结构
 
 ```text
-cmd/dnsherene/main.go        # 应用启动与环境变量接线
+cmd/dnsherene/main.go        # 入口：加载配置、执行、通知、输出
 internal/config/config.go    # 环境配置加载与校验
-internal/app/service.go      # 续期执行流程
-pkg/dnshe/client.go          # DNSHE API SDK
-pkg/dnshe/types.go           # SDK 模型定义
-pkg/notifier/*.go            # 通知接口与实现
+internal/runner/execute.go   # 多账号执行与结果聚合
+internal/runner/notify.go    # 统一通知分发
+internal/app/service.go      # 单账号续期流程
+internal/output/output.go    # 公开输出与脱敏
+internal/report/types.go     # 共享报告结构
+pkg/dnshe/*.go               # DNSHE API SDK
+pkg/notifier/*.go            # 内建通知器实现
 ```
 
 ## DNSHE SDK 覆盖接口
@@ -67,8 +73,9 @@ pkg/notifier/*.go            # 通知接口与实现
 - `DNSHE_DRY_RUN`：填 `true` 或 `1` 时只做演练，不发送真实续期请求。
 - `DNSHE_API_BASE_URL`：默认值为 `https://api005.dnshe.com/index.php`。
 
-可选项（统一通知）：
+可选项（通知）：
 
+- `DNSHERENEW_DEBUG`：填 `true` 或 `1` 时，把详细通知同步打印到控制台。
 - `NOTIFY_WEBHOOK_URL`：设置后会以结构化 JSON 形式把通知发送到 webhook。
 - `NOTIFY_WEBHOOK_TOKEN`：可选的 Bearer Token。
 
@@ -76,7 +83,9 @@ pkg/notifier/*.go            # 通知接口与实现
 
 - 公共日志只输出所有 API 凭证合计的续期成功数量。
 - 通知模块统一接收一个 `internal/report.Info` 结构体，内部包含账号数组；每个账号项都会带上匹配数量、续期数量、失败数量、脱敏 API Key，以及成功/失败域名列表。
-- 每组 API 的详细通知仅在配置了 `NOTIFY_WEBHOOK_URL` 时发送到 webhook。
+- 内建通知器会统一轮询执行：
+  - `Console`：仅在 `DNSHERENEW_DEBUG=true` 时输出到控制台。
+  - `Webhook`：仅在配置了 `NOTIFY_WEBHOOK_URL` 时发送到 webhook。
 - 如果账号下没有可续期的子域名，程序会按空操作成功处理，不会作为失败退出。
 
 ## 隐私说明
@@ -84,7 +93,8 @@ pkg/notifier/*.go            # 通知接口与实现
 - GitHub Actions 的公开日志不会打印域名、到期时间、剩余天数、Webhook URL 或原始 API Key。
 - 成功时的公开输出只有 `renewed_total=<number>`。
 - 失败时会额外输出脱敏后的错误追踪，例如错误条数和分组后的失败原因摘要。
-- 详细续期结果会通过 webhook 字段发送，包括：
+- 公开错误输出和账号级错误摘要统一走 `internal/output` 的脱敏逻辑。
+- 详细续期结果会通过调试控制台或 webhook 发送，包括：
   - 每组 API 凭证的成功数量
   - 每组 API 凭证的未成功数量
   - 已更新域名的新到期时间和剩余天数
@@ -108,7 +118,7 @@ DNSHERENEW_DEBUG=true \
 go run ./cmd/dnsherene
 ```
 
-开启 `DNSHERENEW_DEBUG=true` 后，详细通知事件会同步打印到标准输出，便于本地排查；默认模式下这些明细仍只通过 webhook 发送。
+开启 `DNSHERENEW_DEBUG=true` 后，详细通知事件会同步打印到控制台，便于本地排查；默认模式下这些明细仍只通过 webhook 发送。
 
 多组 API 凭证：
 
