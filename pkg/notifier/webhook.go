@@ -20,8 +20,8 @@ type Webhook struct {
 
 // Notify 在配置了 webhook 时把结构化结果发送到远端地址。
 func (w Webhook) Notify(ctx context.Context, info report.Info) error {
-	url := strings.TrimSpace(os.Getenv("NOTIFY_WEBHOOK_URL"))
-	token := strings.TrimSpace(os.Getenv("NOTIFY_WEBHOOK_TOKEN"))
+	url := strings.TrimSpace(os.Getenv("DNSHE_NOTIFY_WEBHOOK_URL"))
+	token := strings.TrimSpace(os.Getenv("DNSHE_NOTIFY_WEBHOOK_TOKEN"))
 	if url == "" {
 		return nil
 	}

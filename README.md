@@ -75,17 +75,17 @@ pkg/notifier/*.go            # 内建通知器实现
 
 可选项（通知）：
 
-- `DNSHERENEW_DEBUG`：填 `true` 或 `1` 时，把详细通知同步打印到控制台。
-- `NOTIFY_WEBHOOK_URL`：设置后会以结构化 JSON 形式把通知发送到 webhook。
-- `NOTIFY_WEBHOOK_TOKEN`：可选的 Bearer Token。
+- `DNSHE_DEBUG`：填 `true` 或 `1` 时，把详细通知同步打印到控制台。
+- `DNSHE_NOTIFY_WEBHOOK_URL`：设置后会以结构化 JSON 形式把通知发送到 webhook。
+- `DNSHE_NOTIFY_WEBHOOK_TOKEN`：可选的 Bearer Token。
 
 默认通知行为：
 
 - 公共日志只输出所有 API 凭证合计的续期成功数量。
 - 通知模块统一接收一个 `internal/report.Info` 结构体，内部包含账号数组；每个账号项都会带上匹配数量、续期数量、失败数量、脱敏 API Key，以及成功/失败域名列表。
 - 内建通知器会统一轮询执行：
-  - `Console`：仅在 `DNSHERENEW_DEBUG=true` 时输出到控制台。
-  - `Webhook`：仅在配置了 `NOTIFY_WEBHOOK_URL` 时发送到 webhook。
+  - `Console`：仅在 `DNSHE_DEBUG=true` 时输出到控制台。
+  - `Webhook`：仅在配置了 `DNSHE_NOTIFY_WEBHOOK_URL` 时发送到 webhook。
 - 如果账号下没有可续期的子域名，程序会按空操作成功处理，不会作为失败退出。
 
 ## 隐私说明
@@ -114,11 +114,11 @@ go run ./cmd/dnsherene
 ```bash
 DNSHE_API_KEYS="cfsd_xxx" \
 DNSHE_API_SECRETS="yyy" \
-DNSHERENEW_DEBUG=true \
+DNSHE_DEBUG=true \
 go run ./cmd/dnsherene
 ```
 
-开启 `DNSHERENEW_DEBUG=true` 后，详细通知事件会同步打印到控制台，便于本地排查；默认模式下这些明细仍只通过 webhook 发送。
+开启 `DNSHE_DEBUG=true` 后，详细通知事件会同步打印到控制台，便于本地排查；默认模式下这些明细仍只通过 webhook 发送。
 
 多组 API 凭证：
 
@@ -152,8 +152,8 @@ go run ./cmd/dnsherene
 
 - `DNSHE_API_KEYS`
 - `DNSHE_API_SECRETS`
-- `NOTIFY_WEBHOOK_URL`（可选）
-- `NOTIFY_WEBHOOK_TOKEN`（可选）
+- `DNSHE_NOTIFY_WEBHOOK_URL`（可选）
+- `DNSHE_NOTIFY_WEBHOOK_TOKEN`（可选）
 
 添加 variables（可选）：
 

@@ -19,7 +19,7 @@ type Console struct {
 
 // Notify 在调试模式下把结构化续期结果打印到控制台。
 func (c Console) Notify(_ context.Context, info report.Info) error {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("DNSHERENEW_DEBUG"))) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("DNSHE_DEBUG"))) {
 	case "1", "true", "yes", "on":
 	default:
 		return nil
