@@ -21,14 +21,10 @@ type Config struct {
 
 	// APIBaseURL 是 DNSHE API 基础地址，可为空（SDK 会使用默认值）。
 	APIBaseURL string
-	// SubdomainIDs 为逗号分隔的子域名 ID 列表。
-	SubdomainIDs string
-	// RootdomainFilter 为根域名过滤条件。
-	RootdomainFilter string
-	// SubdomainFilter 为子域名前缀过滤条件。
-	SubdomainFilter string
-	// DryRun 为 true 时只做匹配和通知，不执行续期请求。
+	// DryRun 为 true 时只做演练，不执行续期请求。
 	DryRun bool
+	// Debug 为 true 时启用控制台详细通知输出。
+	Debug bool
 
 	// NotifyWebhookURL 为可选通知 Webhook 地址。
 	NotifyWebhookURL string
@@ -45,10 +41,8 @@ func Load() (Config, error) {
 func loadWithLookup(lookup func(string) string) (Config, error) {
 	cfg := Config{
 		APIBaseURL:         strings.TrimSpace(lookup("DNSHE_API_BASE_URL")),
-		SubdomainIDs:       strings.TrimSpace(lookup("DNSHE_SUBDOMAIN_IDS")),
-		RootdomainFilter:   strings.TrimSpace(lookup("DNSHE_ROOTDOMAIN")),
-		SubdomainFilter:    strings.TrimSpace(lookup("DNSHE_SUBDOMAIN")),
 		DryRun:             parseBool(lookup("DNSHE_DRY_RUN")),
+		Debug:              parseBool(lookup("DNSHERENEW_DEBUG")),
 		NotifyWebhookURL:   strings.TrimSpace(lookup("NOTIFY_WEBHOOK_URL")),
 		NotifyWebhookToken: strings.TrimSpace(lookup("NOTIFY_WEBHOOK_TOKEN")),
 	}

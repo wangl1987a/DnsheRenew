@@ -34,6 +34,9 @@ type renewSubdomainResponse struct {
 	Subdomain         string `json:"subdomain"`
 	PreviousExpiresAt string `json:"previous_expires_at"`
 	NewExpiresAt      string `json:"new_expires_at"`
+	RenewedAt         string `json:"renewed_at"`
+	NeverExpires      int    `json:"never_expires"`
+	Status            string `json:"status"`
 	RemainingDays     int    `json:"remaining_days"`
 }
 
@@ -141,9 +144,13 @@ func (c *Client) RenewSubdomain(ctx context.Context, subdomainID int) (RenewResu
 
 	return RenewResult{
 		SubdomainID:       out.SubdomainID,
+		Message:           strings.TrimSpace(out.Message),
 		Subdomain:         out.Subdomain,
 		PreviousExpiresAt: out.PreviousExpiresAt,
 		NewExpiresAt:      out.NewExpiresAt,
+		RenewedAt:         out.RenewedAt,
+		NeverExpires:      out.NeverExpires != 0,
+		Status:            out.Status,
 		RemainingDays:     out.RemainingDays,
 	}, nil
 }

@@ -1,6 +1,9 @@
 package dnshe
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // Subdomain 表示 DNSHE 返回的子域名对象。
 type Subdomain struct {
@@ -53,9 +56,13 @@ type RegisterSubdomainResult struct {
 // RenewResult 定义续期子域名返回结果。
 type RenewResult struct {
 	SubdomainID       int
+	Message           string
 	Subdomain         string
 	PreviousExpiresAt string
 	NewExpiresAt      string
+	RenewedAt         string
+	NeverExpires      bool
+	Status            string
 	RemainingDays     int
 }
 
@@ -137,4 +144,36 @@ type Quota struct {
 	InviteBonus int `json:"invite_bonus"`
 	Total       int `json:"total"`
 	Available   int `json:"available"`
+}
+
+// APIError 表示 DNSHE API 返回的结构化错误。
+//
+// 当服务返回非 2xx HTTP 状态码，或者返回 success=false 的业务错误时，
+// SDK 会优先返回该类型，便于调用方通过 errors.As 读取限流等上下文字段。
+type APIError struct {
+	Operation string
+
+	StatusCode int
+	ErrorText  string
+	Message    string
+	Limit      *int
+	Remaining  *int
+	ResetAt    string
+	RawBody    string
+}
+
+// Error 返回适合日志和上层处理的错误字符串。
+func (e *APIError) Error() string {
+	if e == nil {
+		return "unknown error"
+	}
+	msg := firstNonEmpty(e.ErrorText, e.Message, e.RawBody, "unknown error")
+
+	if e.Operation != "" {
+		return e.Operation + " failed: " + msg
+	}
+	if e.StatusCode > 0 {
+		return "http " + strconv.Itoa(e.StatusCode) + ": " + msg
+	}
+	return msg
 }

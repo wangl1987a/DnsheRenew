@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+var supportedDNSRecordTypes = map[string]struct{}{
+	"A":     {},
+	"AAAA":  {},
+	"CNAME": {},
+	"MX":    {},
+	"TXT":   {},
+}
+
 type listDNSRecordsResponse struct {
 	baseResponse
 	Count   int         `json:"count"`
@@ -45,14 +53,23 @@ func (c *Client) CreateDNSRecord(ctx context.Context, req CreateDNSRecordRequest
 		return CreateDNSRecordResult{}, fmt.Errorf("subdomainID must be positive")
 	}
 
-	recordType := strings.TrimSpace(req.Type)
-	if recordType == "" {
-		return CreateDNSRecordResult{}, fmt.Errorf("type is required")
+	recordType, err := normalizeRecordType(req.Type)
+	if err != nil {
+		return CreateDNSRecordResult{}, err
 	}
 
 	content := strings.TrimSpace(req.Content)
 	if content == "" {
 		return CreateDNSRecordResult{}, fmt.Errorf("content is required")
+	}
+	if req.TTL < 0 {
+		return CreateDNSRecordResult{}, fmt.Errorf("ttl must be positive")
+	}
+	if req.Priority != nil && *req.Priority < 0 {
+		return CreateDNSRecordResult{}, fmt.Errorf("priority must be zero or greater")
+	}
+	if recordType == "MX" && req.Priority == nil {
+		return CreateDNSRecordResult{}, fmt.Errorf("priority is required for MX records")
 	}
 
 	payload := map[string]any{
@@ -95,12 +112,21 @@ func (c *Client) UpdateDNSRecord(ctx context.Context, req UpdateDNSRecordRequest
 	}
 	if req.Content != nil {
 		content := strings.TrimSpace(*req.Content)
+		if content == "" {
+			return fmt.Errorf("content must not be empty")
+		}
 		payload["content"] = content
 	}
 	if req.TTL != nil {
+		if *req.TTL <= 0 {
+			return fmt.Errorf("ttl must be positive")
+		}
 		payload["ttl"] = *req.TTL
 	}
 	if req.Priority != nil {
+		if *req.Priority < 0 {
+			return fmt.Errorf("priority must be zero or greater")
+		}
 		payload["priority"] = *req.Priority
 	}
 	if len(payload) == 1 {
@@ -112,6 +138,18 @@ func (c *Client) UpdateDNSRecord(ctx context.Context, req UpdateDNSRecordRequest
 		return err
 	}
 	return ensureSuccess("update dns record", out)
+}
+
+// normalizeRecordType 规范化并校验 DNS 记录类型。
+func normalizeRecordType(raw string) (string, error) {
+	recordType := strings.ToUpper(strings.TrimSpace(raw))
+	if recordType == "" {
+		return "", fmt.Errorf("type is required")
+	}
+	if _, ok := supportedDNSRecordTypes[recordType]; !ok {
+		return "", fmt.Errorf("unsupported dns record type: %s", recordType)
+	}
+	return recordType, nil
 }
 
 // DeleteDNSRecord 删除指定 DNS 记录。

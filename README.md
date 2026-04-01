@@ -1,27 +1,26 @@
 # dnsherene
 
-DNSHE free-domain monthly renew tool, with clear layering:
+这是一个用于 DNSHE 免费域名月度续期的工具，项目分层比较明确：
 
-- `pkg/dnshe`: SDK layer (API client and domain models).
-- `pkg/notifier`: unified notification API.
-- `internal/app`: renewal orchestration logic.
-- `cmd/dnsherene`: CLI entrypoint.
+- `pkg/dnshe`：SDK 层，封装 API 客户端和领域模型。
+- `pkg/notifier`：统一通知接口。
+- `internal/app`：续期编排逻辑。
+- `cmd/dnsherene`：CLI 入口。
 
-## Project layout
+## 项目结构
 
 ```text
-cmd/dnsherene/main.go        # app bootstrap + env wiring
-internal/config/config.go    # environment loading and validation
-internal/app/service.go      # renew workflow
-internal/app/selector.go     # target selection logic
+cmd/dnsherene/main.go        # 应用启动与环境变量接线
+internal/config/config.go    # 环境配置加载与校验
+internal/app/service.go      # 续期执行流程
 pkg/dnshe/client.go          # DNSHE API SDK
-pkg/dnshe/types.go           # SDK models
-pkg/notifier/*.go            # notifier interface and implementations
+pkg/dnshe/types.go           # SDK 模型定义
+pkg/notifier/*.go            # 通知接口与实现
 ```
 
 ## DNSHE SDK 覆盖接口
 
-`pkg/dnshe` 当前已覆盖文档里的全部分组：
+`pkg/dnshe` 当前已覆盖文档中的全部接口分组：
 
 - `subdomains`
   - `ListSubdomains`
@@ -42,68 +41,84 @@ pkg/notifier/*.go            # notifier interface and implementations
 - `quota`
   - `GetQuota`
 
-## Configuration
+### SDK 说明
 
-Required:
+- HTTP 错误和 `success=false` 的业务错误都会以 `*dnshe.APIError` 返回。
+- 如果接口返回限流字段，`APIError` 会保留 `limit`、`remaining`、`reset_at` 等信息。
+- `RenewSubdomain` 已包含文档中的续期返回字段，例如 `message`、`renewed_at`、`never_expires`、`status`。
+- 创建 DNS 记录前会校验支持的记录类型：`A`、`AAAA`、`CNAME`、`MX`、`TXT`。
+
+## 配置说明
+
+必填项：
 
 - `DNSHE_API_KEYS`
 - `DNSHE_API_SECRETS`
 
-Credential rule:
+凭证规则：
 
-- Always use the plural variables above.
-- Single account is represented as one item in each variable.
-- `DNSHE_API_KEYS` and `DNSHE_API_SECRETS` must have the same item count.
-- List separators support `,` `;` or newline.
+- 始终使用上面这两个复数环境变量。
+- 单账号场景也按列表处理，只填 1 组即可。
+- `DNSHE_API_KEYS` 和 `DNSHE_API_SECRETS` 的项目数量必须一致。
+- 列表分隔符支持 `,`、`;` 和换行。
 
-Optional (target selection):
+可选项（执行行为）：
 
-- `DNSHE_SUBDOMAIN_IDS`: comma-separated IDs, for example `1,2,5` (highest priority).
-- `DNSHE_ROOTDOMAIN`: used only when `DNSHE_SUBDOMAIN_IDS` is empty.
-- `DNSHE_SUBDOMAIN`: used only when `DNSHE_SUBDOMAIN_IDS` is empty.
-- `DNSHE_DRY_RUN`: `true`/`1` to skip real renew requests.
-- `DNSHE_API_BASE_URL`: default `https://api005.dnshe.com/index.php`.
+- `DNSHE_DRY_RUN`：填 `true` 或 `1` 时只做演练，不发送真实续期请求。
+- `DNSHE_API_BASE_URL`：默认值为 `https://api005.dnshe.com/index.php`。
 
-Optional (unified notifications):
+可选项（统一通知）：
 
-- `NOTIFY_WEBHOOK_URL`: if set, events are sent to webhook in JSON.
-- `NOTIFY_WEBHOOK_TOKEN`: optional bearer token for webhook.
+- `NOTIFY_WEBHOOK_URL`：设置后会以结构化 JSON 形式把通知发送到 webhook。
+- `NOTIFY_WEBHOOK_TOKEN`：可选的 Bearer Token。
 
-Default notifier behavior:
+默认通知行为：
 
-- Public logs only print the total renewed count across all API credentials.
-- Detailed per-API notifications are sent only to webhook when `NOTIFY_WEBHOOK_URL` is set.
+- 公共日志只输出所有 API 凭证合计的续期成功数量。
+- 通知模块统一接收一个 `pkg/notifier.Info` 结构体，内部包含账号数组；每个账号项都会带上匹配数量、续期数量、失败数量、脱敏 API Key，以及成功/失败域名列表。
+- 每组 API 的详细通知仅在配置了 `NOTIFY_WEBHOOK_URL` 时发送到 webhook。
+- 如果账号下没有可续期的子域名，程序会按空操作成功处理，不会作为失败退出。
 
-## Privacy
+## 隐私说明
 
-- GitHub Actions public logs do not print domain names, expiry times, remaining days, or raw API keys.
-- The only public output is `renewed_total=<number>`.
-- Detailed renewal results are sent through webhook fields, including:
-  - per API credential updated count
-  - per API credential not-updated count
-  - updated domain expiry time and remaining days
-  - not-updated domain list and failure reasons
-  - masked API key identifier
+- GitHub Actions 的公开日志不会打印域名、到期时间、剩余天数、Webhook URL 或原始 API Key。
+- 成功时的公开输出只有 `renewed_total=<number>`。
+- 失败时会额外输出脱敏后的错误追踪，例如错误条数和分组后的失败原因摘要。
+- 详细续期结果会通过 webhook 字段发送，包括：
+  - 每组 API 凭证的成功数量
+  - 每组 API 凭证的未成功数量
+  - 已更新域名的新到期时间和剩余天数
+  - 未更新域名列表及失败原因
+  - 脱敏后的 API Key 标识
 
-## Run locally
+## 本地运行
 
 ```bash
 DNSHE_API_KEYS="cfsd_xxx" \
 DNSHE_API_SECRETS="yyy" \
-DNSHE_SUBDOMAIN_IDS="1,2" \
 go run ./cmd/dnsherene
 ```
 
-Multi API:
+调试模式：
+
+```bash
+DNSHE_API_KEYS="cfsd_xxx" \
+DNSHE_API_SECRETS="yyy" \
+DNSHERENEW_DEBUG=true \
+go run ./cmd/dnsherene
+```
+
+开启 `DNSHERENEW_DEBUG=true` 后，详细通知事件会同步打印到标准输出，便于本地排查；默认模式下这些明细仍只通过 webhook 发送。
+
+多组 API 凭证：
 
 ```bash
 DNSHE_API_KEYS="key_1,key_2" \
 DNSHE_API_SECRETS="secret_1,secret_2" \
-DNSHE_SUBDOMAIN_IDS="1,2" \
 go run ./cmd/dnsherene
 ```
 
-Dry run:
+演练模式：
 
 ```bash
 DNSHE_API_KEYS="cfsd_xxx" \
@@ -112,27 +127,24 @@ DNSHE_DRY_RUN=true \
 go run ./cmd/dnsherene
 ```
 
-## GitHub Actions (monthly)
+## GitHub Actions（月度执行）
 
-Workflow file: `.github/workflows/monthly-renew.yml`
+工作流文件：`.github/workflows/monthly-renew.yml`
 
-Schedule:
+调度方式：
 
-- `15 0 1 * *` (UTC), monthly on day 1.
-- Manual run supported with `workflow_dispatch`.
+- `15 0 1 * *`（UTC），每月 1 日执行一次。
+- 同时支持 `workflow_dispatch` 手动触发。
 
-### Repository settings
+### 仓库设置
 
-Add secrets:
+添加 secrets：
 
 - `DNSHE_API_KEYS`
 - `DNSHE_API_SECRETS`
-- `DNSHE_SUBDOMAIN_IDS` (optional, recommended)
-- `NOTIFY_WEBHOOK_URL` (optional)
-- `NOTIFY_WEBHOOK_TOKEN` (optional)
+- `NOTIFY_WEBHOOK_URL`（可选）
+- `NOTIFY_WEBHOOK_TOKEN`（可选）
 
-Add variables (optional):
+添加 variables（可选）：
 
-- `DNSHE_ROOTDOMAIN`
-- `DNSHE_SUBDOMAIN`
 - `DNSHE_API_BASE_URL`

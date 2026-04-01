@@ -2,54 +2,48 @@ package notifier
 
 import (
 	"context"
-	"errors"
 	"time"
+
+	"dnsherene/internal/config"
 )
 
-type Level string
-
-const (
-	LevelInfo  Level = "info"
-	LevelError Level = "error"
-)
-
-type Event struct {
-	Level   Level          `json:"level"`
-	Title   string         `json:"title"`
-	Message string         `json:"message"`
-	Fields  map[string]any `json:"fields,omitempty"`
-	Time    time.Time      `json:"time"`
+// Info 是一次完整续期任务的通知载荷。
+//
+// 调用方只负责填充结构化结果，具体输出格式由各个通知实现决定。
+type Info struct {
+	GeneratedAt  time.Time     `json:"generated_at"`
+	RenewedTotal int           `json:"renewed_total"`
+	Accounts     []AccountInfo `json:"accounts,omitempty"`
 }
 
-// Notifier 抽象统一通知能力，业务层只依赖该接口。
+// AccountInfo 表示单组 API 凭证的续期结果。
+type AccountInfo struct {
+	Index        int             `json:"index"`
+	Total        int             `json:"total"`
+	APIKeyMasked string          `json:"api_key_masked,omitempty"`
+	Matched      int             `json:"matched"`
+	Renewed      int             `json:"renewed"`
+	Failed       int             `json:"failed"`
+	DryRun       bool            `json:"dry_run,omitempty"`
+	Error        string          `json:"error,omitempty"`
+	RenewedList  []RenewedDomain `json:"renewed_list,omitempty"`
+	FailedList   []FailedDomain  `json:"failed_list,omitempty"`
+}
+
+// RenewedDomain 表示续期成功的域名信息。
+type RenewedDomain struct {
+	Domain        string `json:"domain"`
+	NewExpiresAt  string `json:"new_expires_at,omitempty"`
+	RemainingDays int    `json:"remaining_days,omitempty"`
+}
+
+// FailedDomain 表示续期失败的域名信息。
+type FailedDomain struct {
+	Domain string `json:"domain"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// Notifier 抽象统一通知能力，业务层只传结构化结果。
 type Notifier interface {
-	Notify(ctx context.Context, event Event) error
-}
-
-// Multi 将同一事件扇出到多个通知实现（控制台、Webhook 等）。
-type Multi struct {
-	notifiers []Notifier
-}
-
-func NewMulti(notifiers ...Notifier) *Multi {
-	filtered := make([]Notifier, 0, len(notifiers))
-	for _, n := range notifiers {
-		if n != nil {
-			filtered = append(filtered, n)
-		}
-	}
-	return &Multi{notifiers: filtered}
-}
-
-func (m *Multi) Notify(ctx context.Context, event Event) error {
-	if event.Time.IsZero() {
-		event.Time = time.Now().UTC()
-	}
-	var errs []error
-	for _, n := range m.notifiers {
-		if err := n.Notify(ctx, event); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errors.Join(errs...)
+	Notify(ctx context.Context, cfg config.Config, info Info) error
 }
