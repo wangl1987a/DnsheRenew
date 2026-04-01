@@ -7,13 +7,16 @@ import (
 
 // Subdomain 表示 DNSHE 返回的子域名对象。
 type Subdomain struct {
-	ID         int    `json:"id"`
-	Subdomain  string `json:"subdomain"`
-	Rootdomain string `json:"rootdomain"`
-	FullDomain string `json:"full_domain"`
-	Status     string `json:"status"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
+	ID              int    `json:"id"`
+	Subdomain       string `json:"subdomain"`
+	Rootdomain      string `json:"rootdomain"`
+	FullDomain      string `json:"full_domain"`
+	Status          string `json:"status"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
+	ExpiresAt       string `json:"expires_at"`
+	RemainingDays   *int   `json:"remaining_days"`
+	NeverExpiresRaw *int   `json:"never_expires"`
 }
 
 // DomainName 返回子域名的可展示完整域名。
@@ -31,6 +34,11 @@ func (s Subdomain) DomainName() string {
 		return root
 	}
 	return ""
+}
+
+// NeverExpires 返回该子域名是否标记为永不过期。
+func (s Subdomain) NeverExpires() bool {
+	return s.NeverExpiresRaw != nil && *s.NeverExpiresRaw != 0
 }
 
 // SubdomainDetail 表示子域名详情以及其 DNS 记录集合。

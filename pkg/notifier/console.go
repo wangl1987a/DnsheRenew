@@ -71,6 +71,11 @@ func (c Console) Notify(_ context.Context, info report.Info) error {
 			return err
 		}
 
+		if len(account.Domains) > 0 {
+			if err := writeJSONLine(writer, "domains", account.Domains); err != nil {
+				return err
+			}
+		}
 		if len(account.RenewedList) > 0 {
 			if err := writeJSONLine(writer, "renewed_list", account.RenewedList); err != nil {
 				return err

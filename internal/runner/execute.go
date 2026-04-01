@@ -78,6 +78,7 @@ func runAccount(
 	account.Renewed = result.Renewed
 	account.Failed = result.Failed
 	account.DryRun = result.DryRun
+	account.Domains = result.Domains
 	account.RenewedList = result.RenewedList
 	account.FailedList = result.FailedList
 	for i := range account.FailedList {

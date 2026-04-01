@@ -18,7 +18,15 @@ func TestConsoleReadsDNSHEDebug(t *testing.T) {
 	info := report.Info{
 		RenewedTotal: 1,
 		Accounts: []report.AccountInfo{
-			{Index: 1, Total: 1, APIKeyMasked: "cfsd***ijkl", Renewed: 1},
+			{
+				Index:        1,
+				Total:        1,
+				APIKeyMasked: "cfsd***ijkl",
+				Renewed:      1,
+				Domains: []report.DomainInfo{
+					{Domain: "api.example.com", ExpiresAt: "2026-08-01 00:00:00"},
+				},
+			},
 		},
 	}
 
@@ -27,6 +35,12 @@ func TestConsoleReadsDNSHEDebug(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "renewed_total=1") {
 		t.Fatalf("debug output missing summary: %q", out.String())
+	}
+	if !strings.Contains(out.String(), "\"domain\":\"api.example.com\"") {
+		t.Fatalf("debug output missing domains: %q", out.String())
+	}
+	if !strings.Contains(out.String(), "\"expires_at\":\"2026-08-01 00:00:00\"") {
+		t.Fatalf("debug output missing expires_at: %q", out.String())
 	}
 }
 

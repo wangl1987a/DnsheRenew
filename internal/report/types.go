@@ -19,8 +19,16 @@ type AccountInfo struct {
 	Failed       int             `json:"failed"`
 	DryRun       bool            `json:"dry_run,omitempty"`
 	Error        string          `json:"error,omitempty"`
+	Domains      []DomainInfo    `json:"domains,omitempty"`
 	RenewedList  []RenewedDomain `json:"renewed_list,omitempty"`
 	FailedList   []FailedDomain  `json:"failed_list,omitempty"`
+}
+
+// DomainInfo 表示账号下子域名的当前到期信息。
+type DomainInfo struct {
+	Domain        string `json:"domain"`
+	ExpiresAt     string `json:"expires_at,omitempty"`
+	RemainingDays *int   `json:"remaining_days,omitempty"`
 }
 
 // RenewedDomain 表示续期成功的域名信息。
