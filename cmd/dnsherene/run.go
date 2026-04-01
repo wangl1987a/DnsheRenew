@@ -9,6 +9,7 @@ import (
 
 	"dnsherene/internal/app"
 	"dnsherene/internal/config"
+	"dnsherene/internal/report"
 	"dnsherene/pkg/dnshe"
 	"dnsherene/pkg/notifier"
 )
@@ -26,7 +27,7 @@ func run(cfg config.Config) (publicSummary, error) {
 
 	var runErrs []error
 	total := len(cfg.Credentials)
-	accounts := make([]notifier.AccountInfo, 0, total)
+	accounts := make([]report.AccountInfo, 0, total)
 	for i, cred := range cfg.Credentials {
 		account, err := runAccount(ctx, cfg, cred, i+1, total)
 		summary.Renewed += account.Renewed
@@ -36,12 +37,12 @@ func run(cfg config.Config) (publicSummary, error) {
 		}
 	}
 
-	info := notifier.Info{
+	info := report.Info{
 		RenewedTotal: summary.Renewed,
 		Accounts:     accounts,
 	}
 	for _, n := range notifier.Builtins {
-		_ = n.Notify(ctx, cfg, info)
+		_ = n.Notify(ctx, info)
 	}
 
 	if len(runErrs) > 0 {
@@ -57,8 +58,8 @@ func runAccount(
 	cred config.APICredential,
 	index int,
 	total int,
-) (notifier.AccountInfo, error) {
-	account := notifier.AccountInfo{
+) (report.AccountInfo, error) {
+	account := report.AccountInfo{
 		Index:        index,
 		Total:        total,
 		APIKeyMasked: maskAPIKey(cred.APIKey),

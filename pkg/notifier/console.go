@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"dnsherene/internal/config"
+	"dnsherene/internal/report"
 )
 
 type Console struct {
@@ -18,8 +18,10 @@ type Console struct {
 }
 
 // Notify 在调试模式下把结构化续期结果打印到控制台。
-func (c Console) Notify(_ context.Context, cfg config.Config, info Info) error {
-	if !cfg.Debug {
+func (c Console) Notify(_ context.Context, info report.Info) error {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("DNSHERENEW_DEBUG"))) {
+	case "1", "true", "yes", "on":
+	default:
 		return nil
 	}
 
@@ -94,7 +96,7 @@ func writeJSONLine(w io.Writer, label string, value any) error {
 }
 
 // hasAccountErrors 判断通知内容中是否包含失败账号或失败域名。
-func hasAccountErrors(info Info) bool {
+func hasAccountErrors(info report.Info) bool {
 	for _, account := range info.Accounts {
 		if strings.TrimSpace(account.Error) != "" || account.Failed > 0 {
 			return true

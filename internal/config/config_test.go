@@ -61,11 +61,9 @@ func TestSplitList(t *testing.T) {
 
 func TestLoadWithLookup(t *testing.T) {
 	values := map[string]string{
-		"DNSHE_API_KEYS":     "k1,k2",
-		"DNSHE_API_SECRETS":  "s1,s2",
-		"DNSHE_DRY_RUN":      "true",
-		"DNSHERENEW_DEBUG":   "true",
-		"NOTIFY_WEBHOOK_URL": "https://example.com/hook",
+		"DNSHE_API_KEYS":    "k1,k2",
+		"DNSHE_API_SECRETS": "s1,s2",
+		"DNSHE_DRY_RUN":     "true",
 	}
 
 	cfg, err := loadWithLookup(func(key string) string {
@@ -79,11 +77,5 @@ func TestLoadWithLookup(t *testing.T) {
 	}
 	if !cfg.DryRun {
 		t.Fatalf("expected DryRun=true")
-	}
-	if !cfg.Debug {
-		t.Fatalf("expected Debug=true")
-	}
-	if cfg.NotifyWebhookURL != "https://example.com/hook" {
-		t.Fatalf("unexpected NotifyWebhookURL: %s", cfg.NotifyWebhookURL)
 	}
 }

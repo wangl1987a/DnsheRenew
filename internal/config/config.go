@@ -23,13 +23,6 @@ type Config struct {
 	APIBaseURL string
 	// DryRun 为 true 时只做演练，不执行续期请求。
 	DryRun bool
-	// Debug 为 true 时启用控制台详细通知输出。
-	Debug bool
-
-	// NotifyWebhookURL 为可选通知 Webhook 地址。
-	NotifyWebhookURL string
-	// NotifyWebhookToken 为可选通知 Bearer Token。
-	NotifyWebhookToken string
 }
 
 // Load 从环境变量加载并校验配置。
@@ -40,11 +33,8 @@ func Load() (Config, error) {
 // loadWithLookup 支持通过注入 lookup 函数实现可测试的配置加载。
 func loadWithLookup(lookup func(string) string) (Config, error) {
 	cfg := Config{
-		APIBaseURL:         strings.TrimSpace(lookup("DNSHE_API_BASE_URL")),
-		DryRun:             parseBool(lookup("DNSHE_DRY_RUN")),
-		Debug:              parseBool(lookup("DNSHERENEW_DEBUG")),
-		NotifyWebhookURL:   strings.TrimSpace(lookup("NOTIFY_WEBHOOK_URL")),
-		NotifyWebhookToken: strings.TrimSpace(lookup("NOTIFY_WEBHOOK_TOKEN")),
+		APIBaseURL: strings.TrimSpace(lookup("DNSHE_API_BASE_URL")),
+		DryRun:     parseBool(lookup("DNSHE_DRY_RUN")),
 	}
 
 	creds, err := resolveCredentials(

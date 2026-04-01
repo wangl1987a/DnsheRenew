@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"dnsherene/internal/report"
 	"dnsherene/pkg/dnshe"
-	"dnsherene/pkg/notifier"
 )
 
 // Result 表示一次续期任务的结构化结果。
@@ -15,8 +15,8 @@ type Result struct {
 	Renewed     int
 	Failed      int
 	DryRun      bool
-	RenewedList []notifier.RenewedDomain
-	FailedList  []notifier.FailedDomain
+	RenewedList []report.RenewedDomain
+	FailedList  []report.FailedDomain
 }
 
 // Service 负责续期任务编排：选目标、调用 SDK。
@@ -70,8 +70,8 @@ func (s *Service) Run(ctx context.Context, dryRun bool) (Result, error) {
 		return result, nil
 	}
 
-	result.RenewedList = make([]notifier.RenewedDomain, 0, len(targets))
-	result.FailedList = make([]notifier.FailedDomain, 0)
+	result.RenewedList = make([]report.RenewedDomain, 0, len(targets))
+	result.FailedList = make([]report.FailedDomain, 0)
 	failureReasons := make([]string, 0, 3)
 	failureReasonSeen := make(map[string]struct{})
 
@@ -83,7 +83,7 @@ func (s *Service) Run(ctx context.Context, dryRun bool) (Result, error) {
 			if domain == "" {
 				domain = fmt.Sprintf("id-%d", target.ID)
 			}
-			result.FailedList = append(result.FailedList, notifier.FailedDomain{
+			result.FailedList = append(result.FailedList, report.FailedDomain{
 				Domain: domain,
 				Reason: renewErr.Error(),
 			})
@@ -104,7 +104,7 @@ func (s *Service) Run(ctx context.Context, dryRun bool) (Result, error) {
 		if successDomain == "" {
 			successDomain = target.DomainName()
 		}
-		result.RenewedList = append(result.RenewedList, notifier.RenewedDomain{
+		result.RenewedList = append(result.RenewedList, report.RenewedDomain{
 			Domain:        successDomain,
 			NewExpiresAt:  renewResult.NewExpiresAt,
 			RemainingDays: renewResult.RemainingDays,
