@@ -1,28 +1,29 @@
 package main
 
 import (
+	"context"
 	"dnsherene/internal/config"
+	"dnsherene/internal/output"
+	"dnsherene/internal/runner"
 	"fmt"
 	"os"
 )
 
 // main 加载配置并执行一次续期任务。
 func main() {
-	summary := publicSummary{}
-
 	cfg, err := config.Load()
-
 	if err != nil {
-		writePublicErrorReport(os.Stderr, err)
-		os.Exit(1)
-	}
-	summary, err = run(cfg)
-
-	if err != nil {
-		writePublicErrorReport(os.Stderr, err)
+		output.WritePublicErrorReport(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("renewed_total=%d\n", summary.Renewed)
+	ctx := context.Background()
+	info, err := runner.Execute(ctx, cfg)
+	_ = runner.Notify(ctx, info)
+	if err != nil {
+		output.WritePublicErrorReport(os.Stderr, err)
+		os.Exit(1)
+	}
 
+	fmt.Printf("renewed_total=%d\n", info.RenewedTotal)
 }

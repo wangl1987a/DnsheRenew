@@ -1,4 +1,4 @@
-package main
+package runner
 
 import (
 	"context"
@@ -9,46 +9,35 @@ import (
 
 	"dnsherene/internal/app"
 	"dnsherene/internal/config"
+	"dnsherene/internal/output"
 	"dnsherene/internal/report"
 	"dnsherene/pkg/dnshe"
-	"dnsherene/pkg/notifier"
 )
 
-type publicSummary struct {
-	Renewed int
-}
-
-// run 顺序执行全部 API 凭证的续期流程。
+// Execute 顺序执行全部 API 凭证的续期流程并返回结构化报告。
 //
 // 当存在多组凭证时，单组失败不会中断后续组执行，最终统一聚合错误返回。
-func run(cfg config.Config) (publicSummary, error) {
-	summary := publicSummary{}
-	ctx := context.Background()
+func Execute(ctx context.Context, cfg config.Config) (report.Info, error) {
+	info := report.Info{
+		GeneratedAt: time.Now().UTC(),
+		Accounts:    make([]report.AccountInfo, 0, len(cfg.Credentials)),
+	}
 
 	var runErrs []error
 	total := len(cfg.Credentials)
-	accounts := make([]report.AccountInfo, 0, total)
 	for i, cred := range cfg.Credentials {
 		account, err := runAccount(ctx, cfg, cred, i+1, total)
-		summary.Renewed += account.Renewed
-		accounts = append(accounts, account)
+		info.RenewedTotal += account.Renewed
+		info.Accounts = append(info.Accounts, account)
 		if err != nil {
 			runErrs = append(runErrs, err)
 		}
 	}
 
-	info := report.Info{
-		RenewedTotal: summary.Renewed,
-		Accounts:     accounts,
-	}
-	for _, n := range notifier.Builtins {
-		_ = n.Notify(ctx, info)
-	}
-
 	if len(runErrs) > 0 {
-		return summary, errors.Join(runErrs...)
+		return info, errors.Join(runErrs...)
 	}
-	return summary, nil
+	return info, nil
 }
 
 // runAccount 执行单个 API 账号的一次完整续期任务。
@@ -62,7 +51,7 @@ func runAccount(
 	account := report.AccountInfo{
 		Index:        index,
 		Total:        total,
-		APIKeyMasked: maskAPIKey(cred.APIKey),
+		APIKeyMasked: output.MaskAPIKey(cred.APIKey),
 	}
 
 	dnsClient, err := dnshe.NewClient(dnshe.Config{
@@ -74,13 +63,13 @@ func runAccount(
 		},
 	})
 	if err != nil {
-		account.Error = err.Error()
+		account.Error = output.SanitizePublicError(err)
 		return account, fmt.Errorf("init dnshe sdk for api[%d] failed: %w", index, err)
 	}
 
 	service, err := app.NewService(dnsClient)
 	if err != nil {
-		account.Error = err.Error()
+		account.Error = output.SanitizePublicError(err)
 		return account, fmt.Errorf("init service for api[%d] failed: %w", index, err)
 	}
 
@@ -91,8 +80,11 @@ func runAccount(
 	account.DryRun = result.DryRun
 	account.RenewedList = result.RenewedList
 	account.FailedList = result.FailedList
+	for i := range account.FailedList {
+		account.FailedList[i].Reason = output.SanitizePublicText(account.FailedList[i].Reason)
+	}
 	if err != nil {
-		account.Error = err.Error()
+		account.Error = output.SanitizePublicError(err)
 		return account, fmt.Errorf("run renew for api[%d] failed: %w", index, err)
 	}
 

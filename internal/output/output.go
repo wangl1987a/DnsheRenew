@@ -1,4 +1,4 @@
-package main
+package output
 
 import (
 	"fmt"
@@ -14,8 +14,8 @@ var (
 	publicSpacePattern  = regexp.MustCompile(`\s+`)
 )
 
-// maskAPIKey 返回用于日志展示的脱敏 API Key。
-func maskAPIKey(apiKey string) string {
+// MaskAPIKey 返回用于日志展示的脱敏 API Key。
+func MaskAPIKey(apiKey string) string {
 	switch {
 	case len(apiKey) <= 4:
 		return "***"
@@ -26,8 +26,8 @@ func maskAPIKey(apiKey string) string {
 	}
 }
 
-// writePublicErrorReport 将聚合错误按脱敏后的公开格式写入输出流。
-func writePublicErrorReport(w io.Writer, err error) {
+// WritePublicErrorReport 将聚合错误按脱敏后的公开格式写入输出流。
+func WritePublicErrorReport(w io.Writer, err error) {
 	items := splitPublicErrors(err)
 	if len(items) == 0 {
 		items = []error{err}
@@ -35,8 +35,40 @@ func writePublicErrorReport(w io.Writer, err error) {
 
 	_, _ = fmt.Fprintf(w, "error_count=%d\n", len(items))
 	for i, item := range items {
-		_, _ = fmt.Fprintf(w, "error[%d]=%s\n", i+1, sanitizePublicError(item))
+		_, _ = fmt.Fprintf(w, "error[%d]=%s\n", i+1, SanitizePublicError(item))
 	}
+}
+
+// SanitizePublicError 对公开错误信息做 URL、域名和 API Key 脱敏。
+func SanitizePublicError(err error) string {
+	if err == nil {
+		return "unknown error"
+	}
+	return SanitizePublicText(err.Error())
+}
+
+// SanitizePublicText 对公开文本做 URL、域名和 API Key 脱敏。
+func SanitizePublicText(message string) string {
+	message = strings.TrimSpace(message)
+	if message == "" {
+		message = "unknown error"
+	}
+
+	message = publicURLPattern.ReplaceAllString(message, "<redacted_url>")
+	message = publicAPIKeyPattern.ReplaceAllStringFunc(message, func(value string) string {
+		return MaskAPIKey(value)
+	})
+	message = publicDomainPattern.ReplaceAllString(message, "<redacted_domain>")
+	message = publicSpacePattern.ReplaceAllString(message, " ")
+	message = strings.TrimSpace(message)
+
+	if message == "" {
+		return "unknown error"
+	}
+	if len(message) > 240 {
+		return message[:240] + "..."
+	}
+	return message
 }
 
 // splitPublicErrors 递归展开 errors.Join 形成的错误列表。
@@ -54,32 +86,4 @@ func splitPublicErrors(err error) []error {
 	}
 
 	return []error{err}
-}
-
-// sanitizePublicError 对公开错误信息做 URL、域名和 API Key 脱敏。
-func sanitizePublicError(err error) string {
-	if err == nil {
-		return "unknown error"
-	}
-
-	message := strings.TrimSpace(err.Error())
-	if message == "" {
-		message = "unknown error"
-	}
-
-	message = publicURLPattern.ReplaceAllString(message, "<redacted_url>")
-	message = publicAPIKeyPattern.ReplaceAllStringFunc(message, func(value string) string {
-		return maskAPIKey(value)
-	})
-	message = publicDomainPattern.ReplaceAllString(message, "<redacted_domain>")
-	message = publicSpacePattern.ReplaceAllString(message, " ")
-	message = strings.TrimSpace(message)
-
-	if message == "" {
-		return "unknown error"
-	}
-	if len(message) > 240 {
-		return message[:240] + "..."
-	}
-	return message
 }

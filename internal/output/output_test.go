@@ -1,4 +1,4 @@
-package main
+package output
 
 import (
 	"bytes"
@@ -20,8 +20,8 @@ func TestMaskAPIKey(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := maskAPIKey(tc.in); got != tc.want {
-				t.Fatalf("maskAPIKey(%q) = %q, want %q", tc.in, got, tc.want)
+			if got := MaskAPIKey(tc.in); got != tc.want {
+				t.Fatalf("MaskAPIKey(%q) = %q, want %q", tc.in, got, tc.want)
 			}
 		})
 	}
@@ -30,7 +30,7 @@ func TestMaskAPIKey(t *testing.T) {
 func TestSanitizePublicError(t *testing.T) {
 	err := errors.New("run renew failed for api key cfsd_abcdefghijkl and domain blog.example.com via https://hooks.example.com/token")
 
-	got := sanitizePublicError(err)
+	got := SanitizePublicError(err)
 
 	if strings.Contains(got, "cfsd_abcdefghijkl") {
 		t.Fatalf("raw api key leaked: %q", got)
@@ -60,7 +60,7 @@ func TestWritePublicErrorReport(t *testing.T) {
 		errors.New("run renew for api[1] failed: 2 renew request(s) failed: http 429 Rate limit exceeded"),
 	)
 
-	writePublicErrorReport(&buf, err)
+	WritePublicErrorReport(&buf, err)
 
 	got := buf.String()
 	if !strings.Contains(got, "error_count=2") {
