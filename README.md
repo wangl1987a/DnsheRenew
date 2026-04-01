@@ -76,6 +76,9 @@ pkg/notifier/*.go            # 内建通知器实现
 可选项（通知）：
 
 - `DNSHE_DEBUG`：填 `true` 或 `1` 时，把详细通知同步打印到控制台。
+- `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN`：Telegram Bot Token，配置后启用 Telegram 通知。
+- `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`：Telegram 目标聊天 ID，支持数字 chat id 或 `@channelusername`。
+- `DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID`：可选，Telegram forum topic ID。
 - `DNSHE_NOTIFY_WEBHOOK_URL`：设置后会以结构化 JSON 形式把通知发送到 webhook。
 - `DNSHE_NOTIFY_WEBHOOK_TOKEN`：可选的 Bearer Token。
 
@@ -86,6 +89,7 @@ pkg/notifier/*.go            # 内建通知器实现
 - 通知模块统一接收一个 `internal/report.Info` 结构体，内部包含账号数组；每个账号项都会带上匹配数量、续期数量、失败数量、脱敏 API Key，以及成功/失败域名列表。
 - 内建通知器会统一轮询执行：
   - `Console`：仅在 `DNSHE_DEBUG=true` 时输出到控制台。
+  - `Telegram`：仅在配置了 `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN` 和 `DNSHE_NOTIFY_TELEGRAM_CHAT_ID` 时发送格式化消息。
   - `Webhook`：仅在配置了 `DNSHE_NOTIFY_WEBHOOK_URL` 时发送到 webhook。
 - 如果账号下没有进入续期窗口的子域名，程序会按空操作成功处理，不会作为失败退出。
 
@@ -98,6 +102,7 @@ pkg/notifier/*.go            # 内建通知器实现
 - 详细续期结果会通过调试控制台或 webhook 发送，包括：
   - 每组 API 凭证的成功数量
   - 每组 API 凭证的未成功数量
+  - 每组 API 凭证下的域名列表和当前到期时间
   - 已更新域名的新到期时间和剩余天数
   - 未更新域名列表及失败原因
   - 脱敏后的 API Key 标识
@@ -153,6 +158,9 @@ go run ./cmd/dnsherene
 
 - `DNSHE_API_KEYS`
 - `DNSHE_API_SECRETS`
+- `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN`（可选）
+- `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`（可选）
+- `DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID`（可选）
 - `DNSHE_NOTIFY_WEBHOOK_URL`（可选）
 - `DNSHE_NOTIFY_WEBHOOK_TOKEN`（可选）
 
