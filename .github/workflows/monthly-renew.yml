@@ -1,0 +1,30 @@
+name: Monthly DNSHE Renew
+
+on:
+  schedule:
+    - cron: "15 0 1 * *"
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Renew
+        env:
+          DNSHE_API_KEYS: ${{ secrets.DNSHE_API_KEYS }}
+          DNSHE_API_SECRETS: ${{ secrets.DNSHE_API_SECRETS }}
+          DNSHE_SUBDOMAIN_IDS: ${{ secrets.DNSHE_SUBDOMAIN_IDS }}
+          DNSHE_ROOTDOMAIN: ${{ vars.DNSHE_ROOTDOMAIN }}
+          DNSHE_SUBDOMAIN: ${{ vars.DNSHE_SUBDOMAIN }}
+          DNSHE_API_BASE_URL: ${{ vars.DNSHE_API_BASE_URL }}
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+          NOTIFY_WEBHOOK_TOKEN: ${{ secrets.NOTIFY_WEBHOOK_TOKEN }}
+        run: go run ./cmd/dnsherene
