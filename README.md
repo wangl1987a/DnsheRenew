@@ -36,6 +36,24 @@
 
 ## 快速开始
 
+### GitHub Actions
+
+仓库已经包含工作流文件：
+
+`.github/workflows/monthly-renew.yml`
+
+
+GitHub 的公共仓库 60 天无仓库活动时，计划工作流会被自动禁用，而私有仓库则没有此限制。
+建议使用仓库右上角的 `Use this template` 并设置为私有仓库。
+
+默认调度：
+
+- `15 0 1 * *`（UTC）
+- 同时支持 `workflow_dispatch` 手动触发
+
+环境变量可在 GitHub Secrets 配置
+
+### 本地运行
 最小运行方式：
 
 ```bash
@@ -117,31 +135,6 @@ go run ./cmd/dnsherene
 - 脱敏后的 API Key 标识
 
 Telegram 通知会使用格式化消息输出，并在内容较长时自动分段。
-
-## GitHub Actions
-
-仓库已经包含工作流文件：
-
-`.github/workflows/monthly-renew.yml`
-
-默认调度：
-
-- `15 0 1 * *`（UTC）
-- 同时支持 `workflow_dispatch` 手动触发
-
-建议配置的 GitHub Secrets：
-
-- `DNSHE_API_KEYS`
-- `DNSHE_API_SECRETS`
-- `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN`
-- `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`
-- `DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID`
-- `DNSHE_NOTIFY_WEBHOOK_URL`
-- `DNSHE_NOTIFY_WEBHOOK_TOKEN`
-
-可选 GitHub Variables：
-
-- `DNSHE_API_BASE_URL`
 
 ## 隐私与日志
 
