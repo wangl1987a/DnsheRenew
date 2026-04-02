@@ -1,30 +1,175 @@
 # dnsherene
 
-这是一个用于 DNSHE 免费域名月度续期的工具，当前结构按“入口、执行、通知、SDK”拆分：
+`dnsherene` 是一个面向 DNSHE 免费子域名的自动续期工具。
 
-- `cmd/dnsherene`：极薄入口，只负责加载配置、执行任务和输出公开结果。
-- `internal/runner`：顺序执行多账号续期，并统一分发通知。
-- `internal/app`：单账号续期编排逻辑。
-- `internal/output`：公开输出与脱敏。
-- `internal/report`：执行结果和通知共用的结构化报告模型。
-- `pkg/dnshe`：DNSHE API SDK。
-- `pkg/notifier`：零值可用的内建通知器实现。
+此项目每次执行时调用 DNSHE 官方 API，自动找出已经进入续期窗口的子域名并完成续期，避免手动登录网站逐个处理。适合放在 GitHub Actions、服务器定时任务或本地 cron 中长期运行。
+此项目会解析域名到期时间，只对剩余时间小于 `180` 天的子域名发起续期请求，从而减少无效请求。
+
+## 适用场景
+
+- 你有一个或多个 DNSHE 免费子域名，需要长期自动续期
+- 你有多组 API 凭证，希望统一管理和批量执行
+- 你希望公开日志尽量干净，但私有通知里能看到完整的域名和到期信息
+- 你希望把任务挂到 GitHub Actions 或其他 CI / 定时任务平台上
+
+## 功能特性
+
+- 自动识别进入续期窗口的域名，只续期剩余时间小于 `180` 天的子域名
+- 支持多账号批量执行，单个账号失败不会中断其他账号
+- 支持 `dry-run` 演练模式，先看匹配结果再决定是否真实执行
+- 支持控制台调试输出、Telegram 机器人通知、Webhook 通知
+- 私有通知会带每个账号的域名列表、当前到期时间、续期结果和失败原因
+- 公开输出默认只保留 `renewed_total` 和脱敏后的错误摘要
+- 内置 DNSHE SDK，可单独复用 DNSHE API 能力
+
+## 工作方式
+
+程序每次执行时会按下面的流程运行：
+
+1. 读取环境变量并加载一个或多个 DNSHE API 凭证
+2. 拉取每个账号下的子域名列表
+3. 解析剩余时间和到期时间，只保留进入续期窗口的域名
+4. 对命中的域名发起续期请求
+5. 汇总结果，并按配置发送私有通知
+
+如果某个账号下没有任何域名进入续期窗口，会按空操作成功处理，不会作为失败退出。
+
+## 快速开始
+
+最小运行方式：
+
+```bash
+DNSHE_API_KEYS="cfsd_xxx" \
+DNSHE_API_SECRETS="yyy" \
+go run ./cmd/dnsherene
+```
+
+多账号：
+
+```bash
+DNSHE_API_KEYS="key_1,key_2" \
+DNSHE_API_SECRETS="secret_1,secret_2" \
+go run ./cmd/dnsherene
+```
+
+演练模式：
+
+```bash
+DNSHE_API_KEYS="cfsd_xxx" \
+DNSHE_API_SECRETS="yyy" \
+DNSHE_DRY_RUN=true \
+go run ./cmd/dnsherene
+```
+
+调试模式：
+
+```bash
+DNSHE_API_KEYS="cfsd_xxx" \
+DNSHE_API_SECRETS="yyy" \
+DNSHE_DEBUG=true \
+go run ./cmd/dnsherene
+```
+
+开启 `DNSHE_DEBUG=true` 后，详细通知会同步输出到控制台，便于本地排查。
+
+## 环境变量
+
+必填：
+
+- `DNSHE_API_KEYS`
+- `DNSHE_API_SECRETS`
+
+可选：
+
+- `DNSHE_DRY_RUN`
+- `DNSHE_API_BASE_URL`
+- `DNSHE_DEBUG`
+- `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN`
+- `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`
+- `DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID`
+- `DNSHE_NOTIFY_WEBHOOK_URL`
+- `DNSHE_NOTIFY_WEBHOOK_TOKEN`
+
+凭证规则：
+
+- 始终使用 `DNSHE_API_KEYS` 和 `DNSHE_API_SECRETS` 这两个复数环境变量
+- 单账号场景也按列表处理，只填 1 组即可
+- 两个列表的项目数量必须一致
+- 分隔符支持 `,`、`;` 和换行
+
+## 通知说明
+
+当前内建三种通知器：
+
+- `Console`
+  仅在 `DNSHE_DEBUG=true` 时启用
+- `Telegram`
+  需要同时配置 `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN` 和 `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`
+- `Webhook`
+  需要配置 `DNSHE_NOTIFY_WEBHOOK_URL`
+
+私有通知内容会包含：
+
+- 每个账号的匹配数量、续期数量、失败数量
+- 每个账号下的域名列表、当前到期时间、剩余天数
+- 续期成功域名的新到期时间
+- 失败域名及失败原因
+- 脱敏后的 API Key 标识
+
+Telegram 通知会使用格式化消息输出，并在内容较长时自动分段。
+
+## GitHub Actions
+
+仓库已经包含工作流文件：
+
+`.github/workflows/monthly-renew.yml`
+
+默认调度：
+
+- `15 0 1 * *`（UTC）
+- 同时支持 `workflow_dispatch` 手动触发
+
+建议配置的 GitHub Secrets：
+
+- `DNSHE_API_KEYS`
+- `DNSHE_API_SECRETS`
+- `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN`
+- `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`
+- `DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID`
+- `DNSHE_NOTIFY_WEBHOOK_URL`
+- `DNSHE_NOTIFY_WEBHOOK_TOKEN`
+
+可选 GitHub Variables：
+
+- `DNSHE_API_BASE_URL`
+
+## 隐私与日志
+
+- 公开日志默认不会打印域名、到期时间、剩余天数、Webhook 地址或原始 API Key
+- 成功时公开输出只有 `renewed_total=<number>`
+- 失败时会输出脱敏后的错误摘要
+- 私有通知和调试日志会包含详细域名信息，因此更适合发往 Telegram、Webhook 或本地控制台
 
 ## 项目结构
 
-```text
-cmd/dnsherene/main.go        # 入口：加载配置、执行、通知、输出
-internal/config/config.go    # 环境配置加载与校验
-internal/runner/execute.go   # 多账号执行与结果聚合
-internal/runner/notify.go    # 统一通知分发
-internal/app/service.go      # 单账号续期流程
-internal/output/output.go    # 公开输出与脱敏
-internal/report/types.go     # 共享报告结构
-pkg/dnshe/*.go               # DNSHE API SDK
-pkg/notifier/*.go            # 内建通知器实现
-```
+项目按“入口、执行、通知、SDK”拆分：
 
-## DNSHE SDK 覆盖接口
+- `cmd/dnsherene`
+  程序入口，只负责加载配置、执行和输出公开结果
+- `internal/runner`
+  多账号执行与通知分发
+- `internal/app`
+  单账号续期编排逻辑
+- `internal/output`
+  公开输出与脱敏
+- `internal/report`
+  执行结果和通知共用的结构化报告模型
+- `pkg/dnshe`
+  DNSHE API SDK
+- `pkg/notifier`
+  控制台、Telegram、Webhook 等通知实现
+
+## DNSHE SDK 覆盖范围
 
 `pkg/dnshe` 当前已覆盖文档中的全部接口分组：
 
@@ -47,123 +192,9 @@ pkg/notifier/*.go            # 内建通知器实现
 - `quota`
   - `GetQuota`
 
-### SDK 说明
+SDK 额外处理了这些细节：
 
-- HTTP 错误和 `success=false` 的业务错误都会以 `*dnshe.APIError` 返回。
-- 如果接口返回限流字段，`APIError` 会保留 `limit`、`remaining`、`reset_at` 等信息。
-- `RenewSubdomain` 已包含文档中的续期返回字段，例如 `message`、`renewed_at`、`never_expires`、`status`。
-- 创建 DNS 记录前会校验支持的记录类型：`A`、`AAAA`、`CNAME`、`MX`、`TXT`。
-
-## 配置说明
-
-必填项：
-
-- `DNSHE_API_KEYS`
-- `DNSHE_API_SECRETS`
-
-凭证规则：
-
-- 始终使用上面这两个复数环境变量。
-- 单账号场景也按列表处理，只填 1 组即可。
-- `DNSHE_API_KEYS` 和 `DNSHE_API_SECRETS` 的项目数量必须一致。
-- 列表分隔符支持 `,`、`;` 和换行。
-
-可选项（执行行为）：
-
-- `DNSHE_DRY_RUN`：填 `true` 或 `1` 时只做演练，不发送真实续期请求。
-- `DNSHE_API_BASE_URL`：默认值为 `https://api005.dnshe.com/index.php`。
-
-可选项（通知）：
-
-- `DNSHE_DEBUG`：填 `true` 或 `1` 时，把详细通知同步打印到控制台。
-- `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN`：Telegram Bot Token，配置后启用 Telegram 通知。
-- `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`：Telegram 目标聊天 ID，支持数字 chat id 或 `@channelusername`。
-- `DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID`：可选，Telegram forum topic ID。
-- `DNSHE_NOTIFY_WEBHOOK_URL`：设置后会以结构化 JSON 形式把通知发送到 webhook。
-- `DNSHE_NOTIFY_WEBHOOK_TOKEN`：可选的 Bearer Token。
-
-默认通知行为：
-
-- 公共日志只输出所有 API 凭证合计的续期成功数量。
-- 程序不会默认续全部域名，只会尝试续期剩余时间小于 `180` 天的子域名。
-- 通知模块统一接收一个 `internal/report.Info` 结构体，内部包含账号数组；每个账号项都会带上匹配数量、续期数量、失败数量、脱敏 API Key，以及成功/失败域名列表。
-- 内建通知器会统一轮询执行：
-  - `Console`：仅在 `DNSHE_DEBUG=true` 时输出到控制台。
-  - `Telegram`：仅在配置了 `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN` 和 `DNSHE_NOTIFY_TELEGRAM_CHAT_ID` 时发送格式化消息。
-  - `Webhook`：仅在配置了 `DNSHE_NOTIFY_WEBHOOK_URL` 时发送到 webhook。
-- 如果账号下没有进入续期窗口的子域名，程序会按空操作成功处理，不会作为失败退出。
-
-## 隐私说明
-
-- GitHub Actions 的公开日志不会打印域名、到期时间、剩余天数、Webhook URL 或原始 API Key。
-- 成功时的公开输出只有 `renewed_total=<number>`。
-- 失败时会额外输出脱敏后的错误追踪，例如错误条数和分组后的失败原因摘要。
-- 公开错误输出和账号级错误摘要统一走 `internal/output` 的脱敏逻辑。
-- 详细续期结果会通过调试控制台或 webhook 发送，包括：
-  - 每组 API 凭证的成功数量
-  - 每组 API 凭证的未成功数量
-  - 每组 API 凭证下的域名列表和当前到期时间
-  - 已更新域名的新到期时间和剩余天数
-  - 未更新域名列表及失败原因
-  - 脱敏后的 API Key 标识
-
-## 本地运行
-
-```bash
-DNSHE_API_KEYS="cfsd_xxx" \
-DNSHE_API_SECRETS="yyy" \
-go run ./cmd/dnsherene
-```
-
-调试模式：
-
-```bash
-DNSHE_API_KEYS="cfsd_xxx" \
-DNSHE_API_SECRETS="yyy" \
-DNSHE_DEBUG=true \
-go run ./cmd/dnsherene
-```
-
-开启 `DNSHE_DEBUG=true` 后，详细通知事件会同步打印到控制台，便于本地排查；默认模式下这些明细仍只通过 webhook 发送。
-
-多组 API 凭证：
-
-```bash
-DNSHE_API_KEYS="key_1,key_2" \
-DNSHE_API_SECRETS="secret_1,secret_2" \
-go run ./cmd/dnsherene
-```
-
-演练模式：
-
-```bash
-DNSHE_API_KEYS="cfsd_xxx" \
-DNSHE_API_SECRETS="yyy" \
-DNSHE_DRY_RUN=true \
-go run ./cmd/dnsherene
-```
-
-## GitHub Actions（月度执行）
-
-工作流文件：`.github/workflows/monthly-renew.yml`
-
-调度方式：
-
-- `15 0 1 * *`（UTC），每月 1 日执行一次。
-- 同时支持 `workflow_dispatch` 手动触发。
-
-### 仓库设置
-
-添加 secrets：
-
-- `DNSHE_API_KEYS`
-- `DNSHE_API_SECRETS`
-- `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN`（可选）
-- `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`（可选）
-- `DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID`（可选）
-- `DNSHE_NOTIFY_WEBHOOK_URL`（可选）
-- `DNSHE_NOTIFY_WEBHOOK_TOKEN`（可选）
-
-添加 variables（可选）：
-
-- `DNSHE_API_BASE_URL`
+- HTTP 错误和 `success=false` 业务错误统一返回 `*dnshe.APIError`
+- 限流字段会保留在结构化错误中
+- `RenewSubdomain` 已包含续期相关返回字段
+- DNS 记录创建前会做基础参数校验
