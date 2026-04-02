@@ -34,61 +34,30 @@
 
 如果某个账号下没有任何域名进入续期窗口，会按空操作成功处理，不会作为失败退出。
 
-## 快速开始
+## GitHub Actions
 
-### GitHub Actions
+这是此项目最推荐的运行方式。
 
 仓库已经包含工作流文件：
 
 `.github/workflows/monthly-renew.yml`
-
-
-GitHub 的公共仓库 60 天无仓库活动时，计划工作流会被自动禁用，而私有仓库则没有此限制。
-建议使用仓库右上角的 `Use this template` 并设置为私有仓库。
 
 默认调度：
 
 - `15 0 1 * *`（UTC）
 - 同时支持 `workflow_dispatch` 手动触发
 
-环境变量可在 GitHub Secrets 配置
+推荐使用方式：
 
-### 本地运行
-最小运行方式：
+1. 使用仓库右上角的 `Use this template` 创建你自己的仓库
+2. 按下面的环境变量说明配置 GitHub `Secrets` / `Variables`
+3. 保持 Actions 启用，让工作流按月自动执行
 
-```bash
-DNSHE_API_KEYS="cfsd_xxx" \
-DNSHE_API_SECRETS="yyy" \
-go run ./cmd/dnsherene
-```
+如果你打算长期依赖 GitHub Actions 的计划任务，建议注意下面几点：
 
-多账号：
-
-```bash
-DNSHE_API_KEYS="key_1,key_2" \
-DNSHE_API_SECRETS="secret_1,secret_2" \
-go run ./cmd/dnsherene
-```
-
-演练模式：
-
-```bash
-DNSHE_API_KEYS="cfsd_xxx" \
-DNSHE_API_SECRETS="yyy" \
-DNSHE_DRY_RUN=true \
-go run ./cmd/dnsherene
-```
-
-调试模式：
-
-```bash
-DNSHE_API_KEYS="cfsd_xxx" \
-DNSHE_API_SECRETS="yyy" \
-DNSHE_DEBUG=true \
-go run ./cmd/dnsherene
-```
-
-开启 `DNSHE_DEBUG=true` 后，详细通知会同步输出到控制台，便于本地排查。
+- 公共仓库在 `60` 天无仓库活动时，GitHub 会自动禁用 scheduled workflows
+- 私有仓库不受这个公开仓库限制影响
+- 如果你希望更稳定地长期运行，建议将模板仓库创建为私有仓库
 
 ## 环境变量
 
@@ -135,6 +104,57 @@ go run ./cmd/dnsherene
 - 脱敏后的 API Key 标识
 
 Telegram 通知会使用格式化消息输出，并在内容较长时自动分段。
+
+当前工作流使用的配置来源如下：
+
+- GitHub Secrets
+  - `DNSHE_API_KEYS`
+  - `DNSHE_API_SECRETS`
+  - `DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN`
+  - `DNSHE_NOTIFY_TELEGRAM_CHAT_ID`
+  - `DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID`
+  - `DNSHE_NOTIFY_WEBHOOK_URL`
+  - `DNSHE_NOTIFY_WEBHOOK_TOKEN`
+- GitHub Variables
+  - `DNSHE_API_BASE_URL`
+
+## 本地运行
+
+最小运行方式：
+
+```bash
+DNSHE_API_KEYS="cfsd_xxx" \
+DNSHE_API_SECRETS="yyy" \
+go run ./cmd/dnsherene
+```
+
+多账号：
+
+```bash
+DNSHE_API_KEYS="key_1,key_2" \
+DNSHE_API_SECRETS="secret_1,secret_2" \
+go run ./cmd/dnsherene
+```
+
+演练模式：
+
+```bash
+DNSHE_API_KEYS="cfsd_xxx" \
+DNSHE_API_SECRETS="yyy" \
+DNSHE_DRY_RUN=true \
+go run ./cmd/dnsherene
+```
+
+调试模式：
+
+```bash
+DNSHE_API_KEYS="cfsd_xxx" \
+DNSHE_API_SECRETS="yyy" \
+DNSHE_DEBUG=true \
+go run ./cmd/dnsherene
+```
+
+开启 `DNSHE_DEBUG=true` 后，详细通知会同步输出到控制台，便于本地排查。
 
 ## 隐私与日志
 
