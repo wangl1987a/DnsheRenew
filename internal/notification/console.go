@@ -1,4 +1,4 @@
-package notifier
+package notification
 
 import (
 	"context"
@@ -13,15 +13,14 @@ import (
 )
 
 type Console struct {
+	enabled   bool
 	outWriter io.Writer
 	errWriter io.Writer
 }
 
-// Notify 在调试模式下把结构化续期结果打印到控制台。
+// Notify 在启用调试模式时把结构化续期结果打印到控制台。
 func (c Console) Notify(_ context.Context, info report.Info) error {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("DNSHE_DEBUG"))) {
-	case "1", "true", "yes", "on":
-	default:
+	if !c.enabled {
 		return nil
 	}
 

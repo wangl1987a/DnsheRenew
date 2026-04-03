@@ -1,4 +1,4 @@
-package notifier
+package notification
 
 import (
 	"bytes"
@@ -7,21 +7,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
+	"dnsherene/internal/config"
 	"dnsherene/internal/report"
 )
 
 type Webhook struct {
+	config     config.WebhookConfig
 	httpClient *http.Client
 }
 
 // Notify 在配置了 webhook 时把结构化结果发送到远端地址。
 func (w Webhook) Notify(ctx context.Context, info report.Info) error {
-	url := strings.TrimSpace(os.Getenv("DNSHE_NOTIFY_WEBHOOK_URL"))
-	token := strings.TrimSpace(os.Getenv("DNSHE_NOTIFY_WEBHOOK_TOKEN"))
+	url := strings.TrimSpace(w.config.URL)
 	if url == "" {
 		return nil
 	}
@@ -40,7 +40,7 @@ func (w Webhook) Notify(ctx context.Context, info report.Info) error {
 		return fmt.Errorf("build webhook request failed: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if token != "" {
+	if token := strings.TrimSpace(w.config.Token); token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"dnsherene/internal/config"
+	"dnsherene/internal/notification"
 	"dnsherene/internal/output"
 	"dnsherene/internal/runner"
 	"fmt"
@@ -17,9 +18,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	notifier, err := notification.NewManager(cfg.Notification)
+	if err != nil {
+		output.WritePublicErrorReport(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	ctx := context.Background()
 	info, err := runner.Execute(ctx, cfg)
-	_ = runner.Notify(ctx, info)
+	_ = notifier.Notify(ctx, info)
 	if err != nil {
 		output.WritePublicErrorReport(os.Stderr, err)
 		os.Exit(1)

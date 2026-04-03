@@ -12,13 +12,16 @@
 - 某个渠道配置了一部分但不完整：程序启动时直接报错
 - 某个渠道配置完整：视为启用
 
-## 支持的通知渠道
+## 当前已实现的通知渠道
 
 - Console
 - Telegram
+- Webhook
+
+## 已预留配置但尚未接入发送逻辑的渠道
+
 - Mail
 - Lark
-- Webhook
 
 ## 通用说明
 
@@ -89,6 +92,11 @@ DNSHE_NOTIFY_TELEGRAM_PARSE_MODE=HTML
 
 ## Mail
 
+当前状态：
+
+- 已完成配置解析和校验
+- 尚未接入实际发送逻辑
+
 | 变量名 | 参数说明 | 是否必须 | 示例 |
 | --- | --- | --- | --- |
 | `DNSHE_NOTIFY_MAIL_FROM` | 发件人地址 | 是 | `bot@example.com` |
@@ -126,6 +134,11 @@ DNSHE_NOTIFY_MAIL_TO=alice@example.com,bob@example.com
 ```
 
 ## Lark
+
+当前状态：
+
+- 已完成配置解析和校验
+- 尚未接入实际发送逻辑
 
 Lark 支持两种模式：
 

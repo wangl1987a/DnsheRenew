@@ -170,7 +170,9 @@ go run ./cmd/dnsherene
 - `cmd/dnsherene`
   程序入口，只负责加载配置、执行和输出公开结果
 - `internal/runner`
-  多账号执行与通知分发
+  多账号执行编排
+- `internal/notification`
+  控制台、Telegram、Webhook 等通知实现与通知请求模型
 - `internal/app`
   单账号续期编排逻辑
 - `internal/output`
@@ -179,8 +181,6 @@ go run ./cmd/dnsherene
   执行结果和通知共用的结构化报告模型
 - `pkg/dnshe`
   DNSHE API SDK
-- `pkg/notifier`
-  控制台、Telegram、Webhook 等通知实现
 
 ## DNSHE SDK 覆盖范围
 

@@ -1,4 +1,4 @@
-package notifier
+package notification
 
 import (
 	"bytes"
@@ -9,12 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	"dnsherene/internal/config"
 	"dnsherene/internal/report"
 )
 
-func TestConsoleReadsDNSHEDebug(t *testing.T) {
-	t.Setenv("DNSHE_DEBUG", "true")
-
+func TestConsoleWritesWhenEnabled(t *testing.T) {
 	var out bytes.Buffer
 	info := report.Info{
 		RenewedTotal: 1,
@@ -31,7 +30,7 @@ func TestConsoleReadsDNSHEDebug(t *testing.T) {
 		},
 	}
 
-	if err := (Console{outWriter: &out, errWriter: &out}).Notify(context.Background(), info); err != nil {
+	if err := (Console{enabled: true, outWriter: &out, errWriter: &out}).Notify(context.Background(), info); err != nil {
 		t.Fatalf("Notify returned error: %v", err)
 	}
 	if !strings.Contains(out.String(), "renewed_total=1") {
@@ -45,7 +44,7 @@ func TestConsoleReadsDNSHEDebug(t *testing.T) {
 	}
 }
 
-func TestWebhookReadsDNSHEPrefixedEnv(t *testing.T) {
+func TestWebhookUsesConfig(t *testing.T) {
 	var gotAuth string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
@@ -53,10 +52,13 @@ func TestWebhookReadsDNSHEPrefixedEnv(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("DNSHE_NOTIFY_WEBHOOK_URL", server.URL)
-	t.Setenv("DNSHE_NOTIFY_WEBHOOK_TOKEN", "token-123")
-
-	err := (Webhook{httpClient: server.Client()}).Notify(context.Background(), report.Info{RenewedTotal: 1})
+	err := (Webhook{
+		config: config.WebhookConfig{
+			URL:   server.URL,
+			Token: "token-123",
+		},
+		httpClient: server.Client(),
+	}).Notify(context.Background(), report.Info{RenewedTotal: 1})
 	if err != nil {
 		t.Fatalf("Notify returned error: %v", err)
 	}
@@ -65,7 +67,7 @@ func TestWebhookReadsDNSHEPrefixedEnv(t *testing.T) {
 	}
 }
 
-func TestTelegramReadsDNSHEPrefixedEnvAndFormatsHTML(t *testing.T) {
+func TestTelegramUsesConfigAndFormatsHTML(t *testing.T) {
 	type request struct {
 		ChatID          any    `json:"chat_id"`
 		MessageThreadID *int   `json:"message_thread_id,omitempty"`
@@ -90,10 +92,7 @@ func TestTelegramReadsDNSHEPrefixedEnvAndFormatsHTML(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN", "token-123")
-	t.Setenv("DNSHE_NOTIFY_TELEGRAM_CHAT_ID", "-100123456")
-	t.Setenv("DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID", "7")
-
+	threadID := 7
 	info := report.Info{
 		RenewedTotal: 1,
 		Accounts: []report.AccountInfo{
@@ -113,7 +112,15 @@ func TestTelegramReadsDNSHEPrefixedEnvAndFormatsHTML(t *testing.T) {
 		},
 	}
 
-	err := (Telegram{httpClient: server.Client(), apiBaseURL: server.URL}).Notify(context.Background(), info)
+	err := (Telegram{
+		config: config.TelegramConfig{
+			BotToken:        "token-123",
+			ChatID:          -100123456,
+			MessageThreadID: &threadID,
+		},
+		httpClient: server.Client(),
+		apiBaseURL: server.URL,
+	}).Notify(context.Background(), info)
 	if err != nil {
 		t.Fatalf("Notify returned error: %v", err)
 	}
@@ -141,10 +148,22 @@ func TestTelegramReadsDNSHEPrefixedEnvAndFormatsHTML(t *testing.T) {
 }
 
 func TestTelegramPartialConfigReturnsError(t *testing.T) {
-	t.Setenv("DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN", "token-123")
-	t.Setenv("DNSHE_NOTIFY_TELEGRAM_CHAT_ID", "")
+	err := (Telegram{
+		config: config.TelegramConfig{
+			BotToken: "token-123",
+		},
+	}).Notify(context.Background(), report.Info{})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}
 
-	err := (Telegram{}).Notify(context.Background(), report.Info{})
+func TestNewManagerRejectsUnimplementedChannels(t *testing.T) {
+	_, err := NewManager(config.NotificationConfig{
+		Mail: &config.MailConfig{
+			SenderAddress: "sender@example.com",
+		},
+	})
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}

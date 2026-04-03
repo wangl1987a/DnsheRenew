@@ -1,4 +1,4 @@
-package notifier
+package notification
 
 import (
 	"bytes"
@@ -8,11 +8,11 @@ import (
 	"html"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"dnsherene/internal/config"
 	"dnsherene/internal/report"
 )
 
@@ -22,6 +22,7 @@ const (
 )
 
 type Telegram struct {
+	config     config.TelegramConfig
 	httpClient *http.Client
 	apiBaseURL string
 }
@@ -47,18 +48,14 @@ type telegramSection struct {
 
 // Notify 在配置了 Telegram Bot 信息时发送美化后的结构化消息。
 func (t Telegram) Notify(ctx context.Context, info report.Info) error {
-	botToken := strings.TrimSpace(os.Getenv("DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN"))
-	chatIDRaw := strings.TrimSpace(os.Getenv("DNSHE_NOTIFY_TELEGRAM_CHAT_ID"))
-	if botToken == "" && chatIDRaw == "" {
+	botToken := strings.TrimSpace(t.config.BotToken)
+	chatID := t.config.ChatID
+
+	if botToken == "" && chatID == 0 {
 		return nil
 	}
-	if botToken == "" || chatIDRaw == "" {
-		return fmt.Errorf("telegram notifier requires DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN and DNSHE_NOTIFY_TELEGRAM_CHAT_ID")
-	}
-
-	messageThreadID, err := readTelegramMessageThreadID()
-	if err != nil {
-		return err
+	if botToken == "" || chatID == 0 {
+		return fmt.Errorf("telegram notifier requires bot token and chat id")
 	}
 
 	httpClient := t.httpClient
@@ -72,10 +69,21 @@ func (t Telegram) Notify(ctx context.Context, info report.Info) error {
 	}
 
 	endpoint := apiBaseURL + "/bot" + botToken + "/sendMessage"
-	chatID := normalizeTelegramChatID(chatIDRaw)
+	parseMode := strings.TrimSpace(t.config.ParseMode)
+	if parseMode == "" {
+		parseMode = "HTML"
+	}
 
 	for _, message := range buildTelegramMessages(info) {
-		if err := t.sendMessage(ctx, httpClient, endpoint, chatID, messageThreadID, message); err != nil {
+		if err := t.sendMessage(
+			ctx,
+			httpClient,
+			endpoint,
+			chatID,
+			t.config.MessageThreadID,
+			message,
+			parseMode,
+		); err != nil {
 			return err
 		}
 	}
@@ -87,15 +95,16 @@ func (t Telegram) sendMessage(
 	ctx context.Context,
 	httpClient *http.Client,
 	endpoint string,
-	chatID any,
+	chatID int64,
 	messageThreadID *int,
 	text string,
+	parseMode string,
 ) error {
 	payload := telegramSendMessageRequest{
 		ChatID:          chatID,
 		MessageThreadID: messageThreadID,
 		Text:            text,
-		ParseMode:       "HTML",
+		ParseMode:       parseMode,
 	}
 
 	raw, err := json.Marshal(payload)
@@ -130,31 +139,6 @@ func (t Telegram) sendMessage(
 		return fmt.Errorf("telegram API %d: %s", code, firstNonEmpty(strings.TrimSpace(out.Description), strings.TrimSpace(string(body))))
 	}
 	return nil
-}
-
-// readTelegramMessageThreadID 解析可选的 Telegram topic ID。
-func readTelegramMessageThreadID() (*int, error) {
-	raw := strings.TrimSpace(os.Getenv("DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID"))
-	if raw == "" {
-		return nil, nil
-	}
-
-	value, err := strconv.Atoi(raw)
-	if err != nil {
-		return nil, fmt.Errorf("DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID must be an integer")
-	}
-	if value <= 0 {
-		return nil, fmt.Errorf("DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID must be positive")
-	}
-	return &value, nil
-}
-
-// normalizeTelegramChatID 将 chat_id 规范化为 Telegram 支持的 JSON 类型。
-func normalizeTelegramChatID(raw string) any {
-	if value, err := strconv.ParseInt(raw, 10, 64); err == nil {
-		return value
-	}
-	return raw
 }
 
 // buildTelegramMessages 将结构化报告渲染为适合 Telegram 的 HTML 消息列表。
