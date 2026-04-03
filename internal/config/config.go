@@ -23,6 +23,8 @@ type Config struct {
 	APIBaseURL string
 	// DryRun 为 true 时只做演练，不执行续期请求。
 	DryRun bool
+	// Notification 是通知模块所需的全部配置。
+	Notification NotificationConfig
 }
 
 // Load 从环境变量加载并校验配置。
@@ -45,6 +47,12 @@ func loadWithLookup(lookup func(string) string) (Config, error) {
 		return cfg, err
 	}
 	cfg.Credentials = creds
+
+	cfg.Notification, err = loadNotificationConfig(lookup)
+	if err != nil {
+		return cfg, err
+	}
+
 	return cfg, nil
 }
 
