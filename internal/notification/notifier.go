@@ -21,7 +21,7 @@ type Manager struct {
 
 // NewManager 根据通知配置创建通知管理器。
 func NewManager(cfg config.NotificationConfig) (Manager, error) {
-	notifiers := make([]Notifier, 0, 3)
+	notifiers := make([]Notifier, 0, 4)
 
 	if cfg.Console.Enabled {
 		notifiers = append(notifiers, Console{enabled: true})
@@ -32,12 +32,12 @@ func NewManager(cfg config.NotificationConfig) (Manager, error) {
 	if cfg.Webhook != nil {
 		notifiers = append(notifiers, Webhook{config: *cfg.Webhook})
 	}
+	if cfg.Lark != nil {
+		notifiers = append(notifiers, Lark{config: *cfg.Lark})
+	}
 
 	if cfg.Mail != nil {
 		return Manager{}, fmt.Errorf("mail notification is not implemented yet")
-	}
-	if cfg.Lark != nil {
-		return Manager{}, fmt.Errorf("lark notification is not implemented yet")
 	}
 
 	return Manager{notifiers: notifiers}, nil

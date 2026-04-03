@@ -158,7 +158,53 @@ func TestTelegramPartialConfigReturnsError(t *testing.T) {
 	}
 }
 
-func TestNewManagerRejectsUnimplementedChannels(t *testing.T) {
+func TestLarkNotifyUsesInjectedSender(t *testing.T) {
+	sender := &stubLarkSender{}
+	info := report.Info{
+		RenewedTotal: 1,
+		Accounts: []report.AccountInfo{
+			{
+				Index:        1,
+				Total:        1,
+				APIKeyMasked: "cfsd***ijkl",
+				Matched:      1,
+				Renewed:      1,
+				Domains: []report.DomainInfo{
+					{Domain: "api.example.com", ExpiresAt: "2026-08-01 00:00:00"},
+				},
+			},
+		},
+	}
+
+	err := (Lark{
+		config: config.LarkConfig{
+			Mode:       config.LarkModeWebhook,
+			WebhookURL: "https://example.com/hook",
+		},
+		sender: sender,
+	}).Notify(context.Background(), info)
+	if err != nil {
+		t.Fatalf("Notify returned error: %v", err)
+	}
+	if sender.subject != "DNSHE Renew Summary" {
+		t.Fatalf("subject = %q, want DNSHE Renew Summary", sender.subject)
+	}
+	if !strings.Contains(sender.message, "Renewed total: 1") {
+		t.Fatalf("message missing summary: %q", sender.message)
+	}
+	if !strings.Contains(sender.message, "api.example.com") {
+		t.Fatalf("message missing domain: %q", sender.message)
+	}
+}
+
+func TestBuildLarkReceiversRejectsUnsupportedType(t *testing.T) {
+	_, err := buildLarkReceivers("unsupported", []string{"abc"})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}
+
+func TestNewManagerRejectsUnimplementedMail(t *testing.T) {
 	_, err := NewManager(config.NotificationConfig{
 		Mail: &config.MailConfig{
 			SenderAddress: "sender@example.com",
@@ -167,4 +213,27 @@ func TestNewManagerRejectsUnimplementedChannels(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error, got nil")
 	}
+}
+
+func TestNewManagerAllowsLark(t *testing.T) {
+	_, err := NewManager(config.NotificationConfig{
+		Lark: &config.LarkConfig{
+			Mode:       config.LarkModeWebhook,
+			WebhookURL: "https://example.com/hook",
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+}
+
+type stubLarkSender struct {
+	subject string
+	message string
+}
+
+func (s *stubLarkSender) Send(_ context.Context, subject, message string) error {
+	s.subject = subject
+	s.message = message
+	return nil
 }

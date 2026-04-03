@@ -16,12 +16,12 @@
 
 - Console
 - Telegram
+- Lark
 - Webhook
 
 ## 已预留配置但尚未接入发送逻辑的渠道
 
 - Mail
-- Lark
 
 ## 通用说明
 
@@ -135,10 +135,10 @@ DNSHE_NOTIFY_MAIL_TO=alice@example.com,bob@example.com
 
 ## Lark
 
-当前状态：
+当前实现说明：
 
-- 已完成配置解析和校验
-- 尚未接入实际发送逻辑
+- 使用 `nikoksr/notify/service/lark`
+- 发送内容为纯文本摘要，标题固定为 `DNSHE Renew Summary`
 
 Lark 支持两种模式：
 
