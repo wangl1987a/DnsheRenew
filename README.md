@@ -59,10 +59,12 @@ on:
 jobs:
   renew:
     runs-on: ubuntu-latest
+    environment:
+      name: dnshe
     steps:
       - name: Renew DNSHE domains
         id: renew
-        uses: your-org/dnsherene@v1
+        uses: nhirsama/DnsheRenew@v0.1
         with:
           api-keys: ${{ secrets.DNSHE_API_KEYS }}
           api-secrets: ${{ secrets.DNSHE_API_SECRETS }}
@@ -73,6 +75,7 @@ jobs:
    - `DNSHE_API_KEYS`
    - `DNSHE_API_SECRETS`
    - 如需通知，再按 [github-action.md](docs/github-action.md) 增加 Telegram、Lark、Webhook 相关配置
+   - 如果你使用的是 `Environment secrets`，请把环境名统一设置为 `dnshe`，并在 workflow 的 job 上声明 `environment: dnshe`
 5. 提交 workflow 文件并确保仓库已启用 Actions
 6. 需要立即测试时，可以在 Actions 页面手动触发 `workflow_dispatch`
 

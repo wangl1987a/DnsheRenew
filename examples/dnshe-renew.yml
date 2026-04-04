@@ -18,11 +18,16 @@ on:
 jobs:
   renew:
     runs-on: ubuntu-latest
+    # 如果你把密钥配置在 GitHub Environment secrets 里，
+    # 请把环境名统一设置为 dnshe，并保留这一段。
+    # 如果你使用的是普通 Repository secrets，可以删掉这一段。
+    environment:
+      name: dnshe
 
     steps:
       - name: Renew DNSHE domains
         id: renew
-        uses: nhirsama/dnsherene@v1
+        uses: nhirsama/DnsheRenew@v0.1
         with:
           # 必填：DNSHE API 凭证
           api-keys: ${{ secrets.DNSHE_API_KEYS }}

@@ -2,7 +2,7 @@
 
 `dnsherene` 仓库根目录提供了一个 `composite action`，适合在其他仓库的 workflow 里直接调用。
 
-如果你想直接复制一份完整 workflow，可以使用带注释的示例文件 [dnshe-renew.yml](/examples/dnshe-renew.yml)。该文件放在 `examples/` 目录下，不会被 GitHub 自动执行。
+如果你想直接复制一份完整 workflow，可以使用带注释的示例文件 [dnshe-renew.yml](../examples/dnshe-renew.yml)。该文件放在 `examples/` 目录下。
 
 ## 基本用法
 
@@ -12,10 +12,12 @@
 jobs:
   renew:
     runs-on: ubuntu-latest
+    environment:
+      name: dnshe
     steps:
       - name: Renew DNSHE domains
         id: renew
-        uses: nhirsama/dnsherene@v1
+        uses: nhirsama/DnsheRenew@v0.1
         with:
           api-keys: ${{ secrets.DNSHE_API_KEYS }}
           api-secrets: ${{ secrets.DNSHE_API_SECRETS }}
@@ -30,10 +32,12 @@ jobs:
 jobs:
   renew:
     runs-on: ubuntu-latest
+    environment:
+      name: dnshe
     steps:
       - name: Renew DNSHE domains
         id: renew
-        uses: nhirsama/dnsherene@v1
+        uses: nhirsama/DnsheRenew@v0.1
         with:
           api-keys: ${{ secrets.DNSHE_API_KEYS }}
           api-secrets: ${{ secrets.DNSHE_API_SECRETS }}
@@ -82,6 +86,7 @@ jobs:
 - 如果主流程执行失败，action 会返回失败状态。
 - 如果只是通知发送失败，action 仍会继续返回主流程结果，同时在日志里输出 `notification_error_*`。
 - GitHub Actions 的敏感信息建议放在 `Secrets`，例如 `api-keys`、`api-secrets`、机器人 token、webhook 地址。
+- 如果你使用的是 `Environment secrets`，请把环境名统一设置为 `dnshe`，并在 job 上声明 `environment: dnshe`；否则 workflow 运行时拿不到这些 secret。
 
 ## 定时执行示例
 
@@ -98,10 +103,12 @@ on:
 jobs:
   renew:
     runs-on: ubuntu-latest
+    environment:
+      name: dnshe
     steps:
       - name: Renew DNSHE domains
         id: renew
-        uses: your-org/dnsherene@v1
+        uses: nhirsama/DnsheRenew@v0.1
         with:
           api-keys: ${{ secrets.DNSHE_API_KEYS }}
           api-secrets: ${{ secrets.DNSHE_API_SECRETS }}
