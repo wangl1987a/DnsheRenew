@@ -73,3 +73,25 @@ func TestWritePublicErrorReport(t *testing.T) {
 		t.Fatalf("second error missing: %q", got)
 	}
 }
+
+func TestWritePrefixedPublicErrorReport(t *testing.T) {
+	var buf bytes.Buffer
+
+	err := errors.Join(
+		errors.New("notify lark failed"),
+		errors.New("notify webhook failed"),
+	)
+
+	WritePrefixedPublicErrorReport(&buf, "notification_error", err)
+
+	got := buf.String()
+	if !strings.Contains(got, "notification_error_count=2") {
+		t.Fatalf("notification error count missing: %q", got)
+	}
+	if !strings.Contains(got, "notification_error[1]=notify lark failed") {
+		t.Fatalf("first notification error missing: %q", got)
+	}
+	if !strings.Contains(got, "notification_error[2]=notify webhook failed") {
+		t.Fatalf("second notification error missing: %q", got)
+	}
+}

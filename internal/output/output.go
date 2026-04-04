@@ -28,14 +28,24 @@ func MaskAPIKey(apiKey string) string {
 
 // WritePublicErrorReport 将聚合错误按脱敏后的公开格式写入输出流。
 func WritePublicErrorReport(w io.Writer, err error) {
+	WritePrefixedPublicErrorReport(w, "error", err)
+}
+
+// WritePrefixedPublicErrorReport 将聚合错误按带前缀的公开格式写入输出流。
+func WritePrefixedPublicErrorReport(w io.Writer, prefix string, err error) {
 	items := splitPublicErrors(err)
 	if len(items) == 0 {
 		items = []error{err}
 	}
 
-	_, _ = fmt.Fprintf(w, "error_count=%d\n", len(items))
+	prefix = strings.TrimSpace(prefix)
+	if prefix == "" {
+		prefix = "error"
+	}
+
+	_, _ = fmt.Fprintf(w, "%s_count=%d\n", prefix, len(items))
 	for i, item := range items {
-		_, _ = fmt.Fprintf(w, "error[%d]=%s\n", i+1, SanitizePublicError(item))
+		_, _ = fmt.Fprintf(w, "%s[%d]=%s\n", prefix, i+1, SanitizePublicError(item))
 	}
 }
 

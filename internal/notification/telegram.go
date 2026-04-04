@@ -165,13 +165,13 @@ func buildTelegramSummaryMessage(info report.Info) string {
 	}
 
 	lines := []string{
-		"Generated: " + formatTelegramTime(ts),
-		fmt.Sprintf("Renewed total: <b>%d</b>", info.RenewedTotal),
-		fmt.Sprintf("Accounts: <b>%d</b>", len(info.Accounts)),
-		fmt.Sprintf("Accounts with issues: <b>%d</b>", failedAccounts),
+		"生成时间: " + formatTelegramTime(ts),
+		fmt.Sprintf("续期成功总数: <b>%d</b>", info.RenewedTotal),
+		fmt.Sprintf("账号数量: <b>%d</b>", len(info.Accounts)),
+		fmt.Sprintf("异常账号数: <b>%d</b>", failedAccounts),
 	}
 
-	return "<b>DNSHE Renew Summary</b>\n" + wrapTelegramBlockquote(lines, false)
+	return "<b>DNSHE 续期摘要</b>\n" + wrapTelegramBlockquote(lines, false)
 }
 
 // buildTelegramAccountMessages 按账号构建一条或多条 Telegram 消息。
@@ -181,21 +181,21 @@ func buildTelegramAccountMessages(account report.AccountInfo) []string {
 
 	if len(account.Domains) > 0 {
 		sections = append(sections, telegramSection{
-			Title:      "Domains",
+			Title:      "命中域名",
 			Lines:      formatTelegramDomains(account.Domains),
 			Expandable: len(account.Domains) > 8,
 		})
 	}
 	if len(account.RenewedList) > 0 {
 		sections = append(sections, telegramSection{
-			Title:      "Renewed",
+			Title:      "续期成功域名",
 			Lines:      formatTelegramRenewed(account.RenewedList),
 			Expandable: len(account.RenewedList) > 8,
 		})
 	}
 	if len(account.FailedList) > 0 {
 		sections = append(sections, telegramSection{
-			Title:      "Failed",
+			Title:      "续期失败域名",
 			Lines:      formatTelegramFailed(account.FailedList),
 			Expandable: len(account.FailedList) > 5,
 		})
@@ -267,19 +267,19 @@ func packTelegramMessages(blocks []string) []string {
 func buildTelegramAccountHeader(account report.AccountInfo) string {
 	mask := fallback(account.APIKeyMasked, "***")
 	lines := []string{
-		fmt.Sprintf("Matched: <b>%d</b>", account.Matched),
-		fmt.Sprintf("Renewed: <b>%d</b>", account.Renewed),
-		fmt.Sprintf("Failed: <b>%d</b>", account.Failed),
+		fmt.Sprintf("命中续期窗口: <b>%d</b>", account.Matched),
+		fmt.Sprintf("续期成功: <b>%d</b>", account.Renewed),
+		fmt.Sprintf("续期失败: <b>%d</b>", account.Failed),
 	}
 	if account.DryRun {
-		lines = append(lines, "Dry run: <b>true</b>")
+		lines = append(lines, "演练模式: <b>是</b>")
 	}
 	if strings.TrimSpace(account.Error) != "" {
-		lines = append(lines, "Error: "+html.EscapeString(account.Error))
+		lines = append(lines, "错误: "+html.EscapeString(account.Error))
 	}
 
 	return fmt.Sprintf(
-		"<b>API [%d/%d]</b> <code>%s</code>\n%s",
+		"<b>账号 [%d/%d]</b> <code>%s</code>\n%s",
 		account.Index,
 		account.Total,
 		html.EscapeString(mask),
@@ -356,10 +356,10 @@ func formatTelegramDomains(domains []report.DomainInfo) []string {
 		line := "• <code>" + html.EscapeString(domain.Domain) + "</code>"
 		meta := make([]string, 0, 2)
 		if strings.TrimSpace(domain.ExpiresAt) != "" {
-			meta = append(meta, "expires <code>"+html.EscapeString(domain.ExpiresAt)+"</code>")
+			meta = append(meta, "到期时间 <code>"+html.EscapeString(domain.ExpiresAt)+"</code>")
 		}
 		if domain.RemainingDays != nil {
-			meta = append(meta, "<code>"+strconv.Itoa(*domain.RemainingDays)+"d</code>")
+			meta = append(meta, "剩余 <code>"+strconv.Itoa(*domain.RemainingDays)+" 天</code>")
 		}
 		if len(meta) > 0 {
 			line += " — " + strings.Join(meta, " | ")
@@ -378,7 +378,7 @@ func formatTelegramRenewed(items []report.RenewedDomain) []string {
 			line += " → <code>" + html.EscapeString(item.NewExpiresAt) + "</code>"
 		}
 		if item.RemainingDays > 0 {
-			line += " (<code>" + strconv.Itoa(item.RemainingDays) + "d</code>)"
+			line += " (剩余 <code>" + strconv.Itoa(item.RemainingDays) + " 天</code>)"
 		}
 		lines = append(lines, line)
 	}

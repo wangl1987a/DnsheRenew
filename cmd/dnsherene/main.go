@@ -26,7 +26,9 @@ func main() {
 
 	ctx := context.Background()
 	info, err := runner.Execute(ctx, cfg)
-	_ = notifier.Notify(ctx, info)
+	if notifyErr := notifier.Notify(ctx, info); notifyErr != nil {
+		output.WritePrefixedPublicErrorReport(os.Stderr, "notification_error", notifyErr)
+	}
 	if err != nil {
 		output.WritePublicErrorReport(os.Stderr, err)
 		os.Exit(1)

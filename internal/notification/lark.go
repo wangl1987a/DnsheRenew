@@ -93,7 +93,7 @@ func buildLarkReceivers(receiverType string, values []string) ([]*notifylark.Rec
 }
 
 func buildLarkNotification(info report.Info) (string, string) {
-	return "DNSHE Renew Summary", buildLarkBody(info)
+	return "DNSHE 续期摘要", buildLarkBody(info)
 }
 
 func buildLarkBody(info report.Info) string {
@@ -110,34 +110,34 @@ func buildLarkBody(info report.Info) string {
 	}
 
 	lines := []string{
-		"Generated: " + ts.UTC().Format("2006-01-02 15:04:05 UTC"),
-		fmt.Sprintf("Renewed total: %d", info.RenewedTotal),
-		fmt.Sprintf("Accounts: %d", len(info.Accounts)),
-		fmt.Sprintf("Accounts with issues: %d", failedAccounts),
+		"生成时间: " + ts.UTC().Format("2006-01-02 15:04:05 UTC"),
+		fmt.Sprintf("续期成功总数: %d", info.RenewedTotal),
+		fmt.Sprintf("账号数量: %d", len(info.Accounts)),
+		fmt.Sprintf("异常账号数: %d", failedAccounts),
 	}
 
 	for _, account := range info.Accounts {
 		lines = append(lines, "")
-		lines = append(lines, fmt.Sprintf("API [%d/%d] %s", account.Index, account.Total, fallback(account.APIKeyMasked, "***")))
-		lines = append(lines, fmt.Sprintf("Matched: %d", account.Matched))
-		lines = append(lines, fmt.Sprintf("Renewed: %d", account.Renewed))
-		lines = append(lines, fmt.Sprintf("Failed: %d", account.Failed))
+		lines = append(lines, fmt.Sprintf("账号 [%d/%d] %s", account.Index, account.Total, fallback(account.APIKeyMasked, "***")))
+		lines = append(lines, fmt.Sprintf("命中续期窗口: %d", account.Matched))
+		lines = append(lines, fmt.Sprintf("续期成功: %d", account.Renewed))
+		lines = append(lines, fmt.Sprintf("续期失败: %d", account.Failed))
 		if account.DryRun {
-			lines = append(lines, "Dry run: true")
+			lines = append(lines, "演练模式: 是")
 		}
 		if strings.TrimSpace(account.Error) != "" {
-			lines = append(lines, "Error: "+strings.TrimSpace(account.Error))
+			lines = append(lines, "错误: "+strings.TrimSpace(account.Error))
 		}
 
 		if len(account.Domains) > 0 {
-			lines = append(lines, "Domains:")
+			lines = append(lines, "命中域名:")
 			for _, domain := range account.Domains {
 				meta := make([]string, 0, 2)
 				if strings.TrimSpace(domain.ExpiresAt) != "" {
-					meta = append(meta, "expires "+strings.TrimSpace(domain.ExpiresAt))
+					meta = append(meta, "到期时间 "+strings.TrimSpace(domain.ExpiresAt))
 				}
 				if domain.RemainingDays != nil {
-					meta = append(meta, strconv.Itoa(*domain.RemainingDays)+"d")
+					meta = append(meta, "剩余 "+strconv.Itoa(*domain.RemainingDays)+" 天")
 				}
 				if len(meta) > 0 {
 					lines = append(lines, "- "+domain.Domain+" | "+strings.Join(meta, " | "))
@@ -148,21 +148,21 @@ func buildLarkBody(info report.Info) string {
 		}
 
 		if len(account.RenewedList) > 0 {
-			lines = append(lines, "Renewed:")
+			lines = append(lines, "续期成功域名:")
 			for _, item := range account.RenewedList {
 				line := "- " + item.Domain
 				if strings.TrimSpace(item.NewExpiresAt) != "" {
 					line += " -> " + strings.TrimSpace(item.NewExpiresAt)
 				}
 				if item.RemainingDays > 0 {
-					line += " (" + strconv.Itoa(item.RemainingDays) + "d)"
+					line += " (剩余 " + strconv.Itoa(item.RemainingDays) + " 天)"
 				}
 				lines = append(lines, line)
 			}
 		}
 
 		if len(account.FailedList) > 0 {
-			lines = append(lines, "Failed:")
+			lines = append(lines, "续期失败域名:")
 			for _, item := range account.FailedList {
 				line := "- " + item.Domain
 				if strings.TrimSpace(item.Reason) != "" {

@@ -138,7 +138,7 @@ DNSHE_NOTIFY_MAIL_TO=alice@example.com,bob@example.com
 当前实现说明：
 
 - 使用 `nikoksr/notify/service/lark`
-- 发送内容为纯文本摘要，标题固定为 `DNSHE Renew Summary`
+- 发送内容为纯文本摘要，标题固定为 `DNSHE 续期摘要`
 
 Lark 支持两种模式：
 

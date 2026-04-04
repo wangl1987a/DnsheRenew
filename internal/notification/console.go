@@ -41,7 +41,7 @@ func (c Console) Notify(_ context.Context, info report.Info) error {
 	}
 
 	header := fmt.Sprintf(
-		"[%s] renew summary: renewed_total=%d accounts=%d",
+		"[%s] 续期摘要: 续期成功总数=%d 账号数量=%d",
 		ts.Format(time.RFC3339),
 		info.RenewedTotal,
 		len(info.Accounts),
@@ -52,7 +52,7 @@ func (c Console) Notify(_ context.Context, info report.Info) error {
 
 	for _, account := range info.Accounts {
 		line := fmt.Sprintf(
-			"api[%d/%d] key=%s matched=%d renewed=%d failed=%d",
+			"账号[%d/%d] key=%s 命中=%d 续期成功=%d 续期失败=%d",
 			account.Index,
 			account.Total,
 			fallback(account.APIKeyMasked, "***"),
@@ -61,10 +61,10 @@ func (c Console) Notify(_ context.Context, info report.Info) error {
 			account.Failed,
 		)
 		if account.DryRun {
-			line += " dry_run=true"
+			line += " 演练=true"
 		}
 		if account.Error != "" {
-			line += " error=" + account.Error
+			line += " 错误=" + account.Error
 		}
 		if _, err := fmt.Fprintln(writer, line); err != nil {
 			return err

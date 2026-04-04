@@ -33,7 +33,7 @@ func TestConsoleWritesWhenEnabled(t *testing.T) {
 	if err := (Console{enabled: true, outWriter: &out, errWriter: &out}).Notify(context.Background(), info); err != nil {
 		t.Fatalf("Notify returned error: %v", err)
 	}
-	if !strings.Contains(out.String(), "renewed_total=1") {
+	if !strings.Contains(out.String(), "续期成功总数=1") {
 		t.Fatalf("debug output missing summary: %q", out.String())
 	}
 	if !strings.Contains(out.String(), "\"domain\":\"api.example.com\"") {
@@ -133,10 +133,10 @@ func TestTelegramUsesConfigAndFormatsHTML(t *testing.T) {
 	if threadID := requests[0].MessageThreadID; threadID == nil || *threadID != 7 {
 		t.Fatalf("message_thread_id = %v, want 7", requests[0].MessageThreadID)
 	}
-	if !strings.Contains(requests[0].Text, "<b>DNSHE Renew Summary</b>") {
+	if !strings.Contains(requests[0].Text, "<b>DNSHE 续期摘要</b>") {
 		t.Fatalf("summary formatting missing: %q", requests[0].Text)
 	}
-	if !strings.Contains(requests[0].Text, "<b>API [1/1]</b>") {
+	if !strings.Contains(requests[0].Text, "<b>账号 [1/1]</b>") {
 		t.Fatalf("account formatting missing: %q", requests[0].Text)
 	}
 	if !strings.Contains(requests[0].Text, "<blockquote>") {
@@ -186,10 +186,10 @@ func TestLarkNotifyUsesInjectedSender(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Notify returned error: %v", err)
 	}
-	if sender.subject != "DNSHE Renew Summary" {
-		t.Fatalf("subject = %q, want DNSHE Renew Summary", sender.subject)
+	if sender.subject != "DNSHE 续期摘要" {
+		t.Fatalf("subject = %q, want DNSHE 续期摘要", sender.subject)
 	}
-	if !strings.Contains(sender.message, "Renewed total: 1") {
+	if !strings.Contains(sender.message, "续期成功总数: 1") {
 		t.Fatalf("message missing summary: %q", sender.message)
 	}
 	if !strings.Contains(sender.message, "api.example.com") {
