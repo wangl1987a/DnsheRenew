@@ -39,13 +39,13 @@
 这是此项目最推荐的运行方式。
 
 仓库根目录已经提供 `composite action`，你可以在自己的 GitHub 仓库里直接调用。
-完整的 action 输入、输出和更多示例见 [github-action.md](/home/ling/Documents/code/DnsheRenew/docs/github-action.md)。
-如果你想直接复制一份完整 workflow，可以使用带注释的示例文件 [dnshe-renew.yml](/home/ling/Documents/code/DnsheRenew/examples/dnshe-renew.yml)。
+完整的 action 输入、输出和更多示例见 [github-action.md](docs/github-action.md)。
+如果你想直接复制一份完整 workflow，可以使用带注释的示例文件 [dnshe-renew.yml](examples/dnshe-renew.yml)。
 
 推荐使用方式：
 
 1. 在 GitHub 上创建一个你自己的仓库，用来放 workflow
-2. 复制 [dnshe-renew.yml](/home/ling/Documents/code/DnsheRenew/examples/dnshe-renew.yml) 到你自己仓库的 `.github/workflows/dnshe-renew.yml`
+2. 复制 [dnshe-renew.yml](examples/dnshe-renew.yml) 到你自己仓库的 `.github/workflows/dnshe-renew.yml`
 3. 按需取消注释并修改里面的可选项，最小可用版本如下
 
 ```yaml
@@ -72,7 +72,7 @@ jobs:
    常见至少包括：
    - `DNSHE_API_KEYS`
    - `DNSHE_API_SECRETS`
-   - 如需通知，再按 [github-action.md](/home/ling/Documents/code/DnsheRenew/docs/github-action.md) 增加 Telegram、Lark、Webhook 相关配置
+   - 如需通知，再按 [github-action.md](docs/github-action.md) 增加 Telegram、Lark、Webhook 相关配置
 5. 提交 workflow 文件并确保仓库已启用 Actions
 6. 需要立即测试时，可以在 Actions 页面手动触发 `workflow_dispatch`
 
@@ -108,6 +108,8 @@ jobs:
 - 单账号场景也按列表处理，只填 1 组即可
 - 两个列表的项目数量必须一致
 - 分隔符支持 `,`、`;` 和换行
+
+详细的通知模块环境变量说明见 [notification.md](docs/notification.md)。
 
 ## 通知说明
 

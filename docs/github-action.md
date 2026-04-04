@@ -2,7 +2,7 @@
 
 `dnsherene` 仓库根目录提供了一个 `composite action`，适合在其他仓库的 workflow 里直接调用。
 
-如果你想直接复制一份完整 workflow，可以使用带注释的示例文件 [dnshe-renew.yml](/home/ling/Documents/code/DnsheRenew/examples/dnshe-renew.yml)。该文件放在 `examples/` 目录下，不会被 GitHub 自动执行。
+如果你想直接复制一份完整 workflow，可以使用带注释的示例文件 [dnshe-renew.yml](/examples/dnshe-renew.yml)。该文件放在 `examples/` 目录下，不会被 GitHub 自动执行。
 
 ## 基本用法
 
