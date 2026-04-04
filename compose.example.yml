@@ -1,39 +1,42 @@
 services:
   dnsherene:
     build:
+      # 使用仓库根目录作为构建上下文，直接构建当前项目镜像。
       context: .
       dockerfile: Dockerfile
-    image: dnsherene:local
+    # 常驻运行 cron 容器；手动停止前保持后台存活。
     restart: unless-stopped
     environment:
-      # Required
-      # Use comma or semicolon separated lists in Compose.
+      # 必填：DNSHE API Key 列表，支持逗号或分号分隔。
       DNSHE_API_KEYS: "cfsd_xxx"
+      # 必填：DNSHE API Secret 列表，顺序需与 DNSHE_API_KEYS 一一对应。
       DNSHE_API_SECRETS: "yyy"
 
-      # Cron schedule and timezone
-      # Example: run at 00:15 on the 1st day of every month.
+      # 定时规则：默认每月 1 号 00:15 执行一次。
       DNSHE_CRON_SCHEDULE: "15 0 1 * *"
+      # 容器内 cron 使用的时区。
       TZ: "Asia/Shanghai"
 
-      # Optional runtime flags
+      # 可选：是否启用演练模式；true 时只匹配不实际续期。
       DNSHE_DRY_RUN: "false"
+      # 可选：是否将详细通知同时输出到控制台。
       DNSHE_DEBUG: "false"
+      # 可选：DNSHE API 基础地址，默认留空使用内置地址。
       DNSHE_API_BASE_URL: ""
 
-      # Optional Telegram notification
+      # 可选：Telegram 通知配置；不使用时请保持为空。
       DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN: ""
       DNSHE_NOTIFY_TELEGRAM_CHAT_ID: ""
       DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID: ""
-      DNSHE_NOTIFY_TELEGRAM_PARSE_MODE: "HTML"
+      DNSHE_NOTIFY_TELEGRAM_PARSE_MODE: ""
 
-      # Optional Lark notification
+      # 可选：飞书通知配置。
       DNSHE_NOTIFY_LARK_WEBHOOK_URL: ""
       DNSHE_NOTIFY_LARK_APP_ID: ""
       DNSHE_NOTIFY_LARK_APP_SECRET: ""
       DNSHE_NOTIFY_LARK_RECEIVER_TYPE: ""
       DNSHE_NOTIFY_LARK_RECEIVERS: ""
 
-      # Optional generic webhook notification
+      # 可选：通用 Webhook 通知配置。
       DNSHE_NOTIFY_WEBHOOK_URL: ""
       DNSHE_NOTIFY_WEBHOOK_TOKEN: ""

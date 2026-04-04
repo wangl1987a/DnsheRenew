@@ -47,6 +47,25 @@ func TestLoadWithLookupRejectsPartialTelegramConfig(t *testing.T) {
 	}
 }
 
+func TestLoadWithLookupIgnoresTelegramOptionalFieldsWithoutRequiredConfig(t *testing.T) {
+	values := map[string]string{
+		"DNSHE_API_KEYS":                          "k1",
+		"DNSHE_API_SECRETS":                       "s1",
+		"DNSHE_NOTIFY_TELEGRAM_PARSE_MODE":        "HTML",
+		"DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID": "7",
+	}
+
+	cfg, err := loadWithLookup(func(key string) string {
+		return values[key]
+	})
+	if err != nil {
+		t.Fatalf("loadWithLookup returned error: %v", err)
+	}
+	if cfg.Notification.Telegram != nil {
+		t.Fatalf("expected Telegram config to be nil when only optional fields are set")
+	}
+}
+
 func TestLoadWithLookupReadsMailConfig(t *testing.T) {
 	values := map[string]string{
 		"DNSHE_API_KEYS":                  "k1",

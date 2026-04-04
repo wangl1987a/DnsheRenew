@@ -114,7 +114,9 @@ func loadTelegramConfig(lookup func(string) string) (*TelegramConfig, error) {
 	messageThreadIDRaw := strings.TrimSpace(lookup("DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID"))
 	parseMode := strings.TrimSpace(lookup("DNSHE_NOTIFY_TELEGRAM_PARSE_MODE"))
 
-	if allEmpty(botToken, chatIDRaw, messageThreadIDRaw, parseMode) {
+	// Telegram 是否启用只由 bot token 和 chat id 决定。
+	// parse mode / message thread id 都是附加选项，不应单独触发配置错误。
+	if allEmpty(botToken, chatIDRaw) {
 		return nil, nil
 	}
 	if botToken == "" {

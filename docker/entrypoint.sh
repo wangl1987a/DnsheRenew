@@ -2,10 +2,12 @@
 
 set -eu
 
+# 容器内运行参数：crond 负责调度，业务命令以非 root 用户执行。
 app_user="dnshe"
 app_bin="/usr/local/bin/dnsherene"
 crontab_file="/etc/crontabs/${app_user}"
 
+# 校验必填环境变量，缺失时直接退出容器。
 require_env() {
   name="$1"
   eval "value=\${$name:-}"
@@ -15,10 +17,12 @@ require_env() {
   fi
 }
 
+# 将多行输入折叠为逗号分隔，便于写入 crontab 环境变量。
 normalize_list() {
   printf "%s" "$1" | tr '\r\n' ',,'
 }
 
+# 以 shell 安全的方式写入 crontab 中的环境变量。
 write_assignment() {
   name="$1"
   value="$2"
@@ -26,6 +30,7 @@ write_assignment() {
   printf "%s='%s'\n" "$name" "$escaped" >> "$crontab_file"
 }
 
+# 根据 TZ 设置容器本地时区，cron 和手动执行都会共享该时区。
 setup_timezone() {
   if [ -n "${TZ:-}" ] && [ -f "/usr/share/zoneinfo/${TZ}" ]; then
     ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime
@@ -33,6 +38,7 @@ setup_timezone() {
   fi
 }
 
+# 生成 crontab：写入运行环境，并把日志重定向到容器标准输出。
 setup_crontab() {
   schedule="${DNSHE_CRON_SCHEDULE:-15 0 1 * *}"
 
@@ -65,12 +71,14 @@ setup_crontab() {
   echo "installed cron schedule: $schedule"
 }
 
+# 立即执行一次主程序，常用于 `docker compose run --rm dnsherene run`。
 run_once() {
   require_env "DNSHE_API_KEYS"
   require_env "DNSHE_API_SECRETS"
   exec su-exec "$app_user:$app_user" "$app_bin" "$@"
 }
 
+# 默认进入 cron 模式；传入 `run` 时立即执行一次；其他参数按原样执行。
 case "${1:-cron}" in
   cron)
     require_env "DNSHE_API_KEYS"
