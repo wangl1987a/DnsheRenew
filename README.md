@@ -244,3 +244,7 @@ SDK 额外处理了这些细节：
 - 限流字段会保留在结构化错误中
 - `RenewSubdomain` 已包含续期相关返回字段
 - DNS 记录创建前会做基础参数校验
+
+## 许可
+本项目根据 Apache License 2.0 授权 - 详细内容请参阅[LICENSE](./LICENSE)文件。
+版权所有 © 2026 [nhir](https://github.com/nhirsama)。
