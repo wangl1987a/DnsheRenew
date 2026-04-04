@@ -1,6 +1,6 @@
-# dnsherene
+# DnsheRenew
 
-`dnsherene` 是一个面向 DNSHE 免费子域名的自动续期工具。
+`DnsheRenew` 是一个面向 [DNSHE](https://www.dnshe.com/) 免费子域名的自动续期工具。
 
 此项目每次执行时调用 DNSHE 官方 API，自动找出已经进入续期窗口的子域名并完成续期，避免手动登录网站逐个处理。适合放在 GitHub Actions、服务器定时任务或本地 cron 中长期运行。
 此项目会解析域名到期时间，只对剩余时间小于 `180` 天的子域名发起续期请求，从而减少无效请求。
@@ -246,5 +246,5 @@ SDK 额外处理了这些细节：
 - DNS 记录创建前会做基础参数校验
 
 ## 许可
-本项目根据 Apache License 2.0 授权 - 详细内容请参阅[LICENSE](./LICENSE)文件。
+本项目根据 Apache License 2.0 授权 - 详细内容请参阅[LICENSE](./LICENSE)文件。  
 版权所有 © 2026 [nhir](https://github.com/nhirsama)。
