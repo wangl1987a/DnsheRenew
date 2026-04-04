@@ -189,6 +189,29 @@ go run ./cmd/dnsherene
 
 开启 `DNSHE_DEBUG=true` 后，详细通知会同步输出到控制台，便于本地排查。
 
+## Docker / Compose
+
+项目支持以容器方式部署，并在容器内使用 cron 定时执行。
+
+最小使用方式：
+
+1. 复制 [compose.example.yml](compose.example.yml) 为你自己的 `compose.yml`
+2. 填入 `DNSHE_API_KEYS`、`DNSHE_API_SECRETS`
+3. 按需修改 `DNSHE_CRON_SCHEDULE` 和 `TZ`
+4. 执行：
+
+```bash
+docker compose up -d --build
+```
+
+默认示例中的 cron 表达式为每月 `1` 号 `00:15` 执行一次，时区为 `Asia/Shanghai`。
+
+如果你只想立即手动执行一次，而不是等待下一个 cron 时间点：
+
+```bash
+docker compose run --rm dnsherene run
+```
+
 ## 隐私与日志
 
 - 公开日志默认不会打印域名、到期时间、剩余天数、Webhook 地址或原始 API Key

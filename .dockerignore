@@ -1,0 +1,6 @@
+.git
+.codex
+.idea
+.env
+.env.local
+.env.*.local

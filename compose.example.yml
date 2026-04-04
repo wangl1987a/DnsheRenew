@@ -1,0 +1,39 @@
+services:
+  dnsherene:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dnsherene:local
+    restart: unless-stopped
+    environment:
+      # Required
+      # Use comma or semicolon separated lists in Compose.
+      DNSHE_API_KEYS: "cfsd_xxx"
+      DNSHE_API_SECRETS: "yyy"
+
+      # Cron schedule and timezone
+      # Example: run at 00:15 on the 1st day of every month.
+      DNSHE_CRON_SCHEDULE: "15 0 1 * *"
+      TZ: "Asia/Shanghai"
+
+      # Optional runtime flags
+      DNSHE_DRY_RUN: "false"
+      DNSHE_DEBUG: "false"
+      DNSHE_API_BASE_URL: ""
+
+      # Optional Telegram notification
+      DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN: ""
+      DNSHE_NOTIFY_TELEGRAM_CHAT_ID: ""
+      DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID: ""
+      DNSHE_NOTIFY_TELEGRAM_PARSE_MODE: "HTML"
+
+      # Optional Lark notification
+      DNSHE_NOTIFY_LARK_WEBHOOK_URL: ""
+      DNSHE_NOTIFY_LARK_APP_ID: ""
+      DNSHE_NOTIFY_LARK_APP_SECRET: ""
+      DNSHE_NOTIFY_LARK_RECEIVER_TYPE: ""
+      DNSHE_NOTIFY_LARK_RECEIVERS: ""
+
+      # Optional generic webhook notification
+      DNSHE_NOTIFY_WEBHOOK_URL: ""
+      DNSHE_NOTIFY_WEBHOOK_TOKEN: ""
