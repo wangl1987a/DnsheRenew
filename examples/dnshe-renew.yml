@@ -1,0 +1,66 @@
+# 这是一个完整的 GitHub Actions workflow 示例。
+# 该文件放在 examples/ 目录下，不会被 GitHub 自动执行。
+# 使用方式：
+# 1. 复制到你自己仓库的 .github/workflows/dnshe-renew.yml
+# 2. 按需取消注释并修改下面的可选配置
+# 3. 在仓库 Secrets / Variables 中补齐对应值
+
+name: Monthly DNSHE Renew
+
+on:
+  # 手动触发，建议第一次先用这个测试
+  workflow_dispatch:
+
+  # 每月 1 号 00:15 UTC 自动执行一次
+  schedule:
+    - cron: "15 0 1 * *"
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Renew DNSHE domains
+        id: renew
+        uses: nhirsama/dnsherene@v1
+        with:
+          # 必填：DNSHE API 凭证
+          api-keys: ${{ secrets.DNSHE_API_KEYS }}
+          api-secrets: ${{ secrets.DNSHE_API_SECRETS }}
+
+          # 可选：是否启用演练模式
+          # dry-run: "true"
+
+          # 可选：是否把详细通知同步输出到 Actions 日志
+          # debug: "true"
+
+          # 可选：自定义 DNSHE API 地址
+          # api-base-url: ${{ vars.DNSHE_API_BASE_URL }}
+
+          # 可选：Telegram 通知
+          # telegram-bot-token: ${{ secrets.DNSHE_NOTIFY_TELEGRAM_BOT_TOKEN }}
+          # telegram-chat-id: ${{ secrets.DNSHE_NOTIFY_TELEGRAM_CHAT_ID }}
+          # telegram-message-thread-id: ${{ secrets.DNSHE_NOTIFY_TELEGRAM_MESSAGE_THREAD_ID }}
+          # telegram-parse-mode: HTML
+
+          # 可选：Lark / 飞书 webhook 机器人
+          # lark-webhook-url: ${{ secrets.DNSHE_NOTIFY_LARK_WEBHOOK_URL }}
+
+          # 可选：Lark / 飞书 custom app
+          # 注意：custom app 和 webhook 只能二选一，不要同时启用
+          # lark-app-id: ${{ secrets.DNSHE_NOTIFY_LARK_APP_ID }}
+          # lark-app-secret: ${{ secrets.DNSHE_NOTIFY_LARK_APP_SECRET }}
+          # lark-receiver-type: chat_id
+          # lark-receivers: ${{ secrets.DNSHE_NOTIFY_LARK_RECEIVERS }}
+
+          # 可选：自定义 webhook
+          # webhook-url: ${{ secrets.DNSHE_NOTIFY_WEBHOOK_URL }}
+          # webhook-token: ${{ secrets.DNSHE_NOTIFY_WEBHOOK_TOKEN }}
+
+      - name: Print result
+        if: ${{ always() }}
+        run: |
+          echo "success=${{ steps.renew.outputs.success }}"
+          echo "renewed-total=${{ steps.renew.outputs.renewed-total }}"
+          echo "notification-error-count=${{ steps.renew.outputs.notification-error-count }}"
+          echo "error-count=${{ steps.renew.outputs.error-count }}"

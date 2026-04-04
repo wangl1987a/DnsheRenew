@@ -1,0 +1,105 @@
+name: DNSHE Renew
+description: 自动续期 DNSHE 免费子域名，并按配置发送通知。
+
+inputs:
+  api-keys:
+    description: DNSHE API Key 列表，支持逗号、分号或换行分隔。
+    required: true
+  api-secrets:
+    description: DNSHE API Secret 列表，顺序需与 api-keys 一一对应。
+    required: true
+  api-base-url:
+    description: DNSHE API 基础地址，默认留空使用 SDK 内置地址。
+    required: false
+  dry-run:
+    description: 是否启用演练模式；支持 true/false。
+    required: false
+    default: "false"
+  debug:
+    description: 是否启用控制台调试通知；支持 true/false。
+    required: false
+    default: "false"
+  telegram-bot-token:
+    description: Telegram Bot Token。
+    required: false
+  telegram-chat-id:
+    description: Telegram 目标聊天 ID。
+    required: false
+  telegram-message-thread-id:
+    description: Telegram topic 或 thread ID。
+    required: false
+  telegram-parse-mode:
+    description: Telegram 解析模式，例如 HTML。
+    required: false
+  lark-webhook-url:
+    description: 飞书群机器人 webhook 地址。
+    required: false
+  lark-app-id:
+    description: 飞书自建应用 App ID。
+    required: false
+  lark-app-secret:
+    description: 飞书自建应用 App Secret。
+    required: false
+  lark-receiver-type:
+    description: 飞书接收人 ID 类型，例如 chat_id、email。
+    required: false
+  lark-receivers:
+    description: 飞书接收人列表，支持逗号、分号或换行分隔。
+    required: false
+  webhook-url:
+    description: 自定义 webhook 地址。
+    required: false
+  webhook-token:
+    description: 自定义 webhook Bearer Token。
+    required: false
+
+outputs:
+  renewed-total:
+    description: 本次执行续期成功的域名总数。
+    value: ${{ steps.renew.outputs.renewed-total }}
+  notification-error-count:
+    description: 本次执行通知发送失败的数量。
+    value: ${{ steps.renew.outputs.notification-error-count }}
+  error-count:
+    description: 本次执行主流程错误数量。
+    value: ${{ steps.renew.outputs.error-count }}
+  success:
+    description: 本次执行是否成功完成。
+    value: ${{ steps.renew.outputs.success }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache-dependency-path: ${{ github.action_path }}/go.sum
+
+    - name: Run DNSHE renew
+      id: renew
+      continue-on-error: true
+      shell: bash
+      env:
+        INPUT_API_KEYS: ${{ inputs.api-keys }}
+        INPUT_API_SECRETS: ${{ inputs.api-secrets }}
+        INPUT_API_BASE_URL: ${{ inputs.api-base-url }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_DEBUG: ${{ inputs.debug }}
+        INPUT_TELEGRAM_BOT_TOKEN: ${{ inputs.telegram-bot-token }}
+        INPUT_TELEGRAM_CHAT_ID: ${{ inputs.telegram-chat-id }}
+        INPUT_TELEGRAM_MESSAGE_THREAD_ID: ${{ inputs.telegram-message-thread-id }}
+        INPUT_TELEGRAM_PARSE_MODE: ${{ inputs.telegram-parse-mode }}
+        INPUT_LARK_WEBHOOK_URL: ${{ inputs.lark-webhook-url }}
+        INPUT_LARK_APP_ID: ${{ inputs.lark-app-id }}
+        INPUT_LARK_APP_SECRET: ${{ inputs.lark-app-secret }}
+        INPUT_LARK_RECEIVER_TYPE: ${{ inputs.lark-receiver-type }}
+        INPUT_LARK_RECEIVERS: ${{ inputs.lark-receivers }}
+        INPUT_WEBHOOK_URL: ${{ inputs.webhook-url }}
+        INPUT_WEBHOOK_TOKEN: ${{ inputs.webhook-token }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/action.sh"
+
+    - name: Fail action if renew execution failed
+      if: ${{ steps.renew.outcome == 'failure' }}
+      shell: bash
+      run: exit 1
