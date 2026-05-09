@@ -1,0 +1,19 @@
+name: Monthly DNSHE Renew
+
+on:
+  schedule:
+    - cron: "15 0 1 * *"
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    environment:
+      name: dnshe
+    steps:
+      - name: Renew DNSHE domains
+        id: renew
+        uses: nhirsama/DnsheRenew@v0.1
+        with:
+          api-keys: cfsd_e734e6caf66cdfc84bc66647f1e55690
+          api-secrets: 5bb649090e0f9927f4f140ef1d1b80d066a6362680302c9f6eb485f1935f35e5
